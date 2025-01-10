@@ -1,3 +1,24 @@
+import { Cell, Dictionary } from '@ton/core';
+import { z } from 'zod';
+
+export const ExtraPayloadSchema = z
+  .object({
+    referralId: z.string().optional(),
+  })
+  .optional();
+
+export class ExtraPayload {
+  referralId?: string;
+  private constructor(params: z.input<typeof ExtraPayloadSchema>) {
+    const parsed = ExtraPayloadSchema.parse(params);
+    this.referralId = parsed?.referralId;
+  }
+
+  toDict(): Dictionary<bigint, Cell> {
+    return Dictionary.empty(Dictionary.Keys.BigUint(256), Dictionary.Values.Cell());
+  }
+}
+
 export abstract class ContractType {
   static readonly FACTORY = 0;
   static readonly VAULT = 1;
