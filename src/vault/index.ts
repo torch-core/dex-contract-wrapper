@@ -1,16 +1,6 @@
 import { Address, Contract, ContractProvider } from '@ton/core';
 import { AssetType } from '@torch-finance/core';
-export type TonVaultData = {
-  assetType: AssetType;
-  admin: Address;
-};
-
-export type JettonVaultData = {
-  assetType: AssetType;
-  admin: Address;
-  jettonMaster: Address;
-  jettonWallet: Address;
-};
+import { TonVaultData, JettonVaultData } from './storage';
 
 export class Vault implements Contract {
   constructor(readonly address: Address) {}

@@ -1,104 +1,7 @@
-import { Cell, Dictionary, Address, Slice, ContractProvider, Contract } from '@ton/core';
-
+import { Address, ContractProvider, Contract } from '@ton/core';
 import { beginCell } from '@ton/core';
-import {
-  Allocation,
-  Asset,
-  parseAssetsFromNestedCell,
-  parseCoinsFromNestedCell,
-  storeCoinsNested,
-} from '@torch-finance/core';
-import { ContractType, PoolStatus, PoolType } from '../common/constants';
-
-export type ReserveData = {
-  reserves: Allocation[];
-  adminFees: Allocation[];
-};
-
-export type BasicInfo = {
-  feeNumerator: bigint;
-  adminFeeNumerator: bigint;
-  initA: bigint;
-  futureA: bigint;
-  initATime: bigint;
-  futureATime: bigint;
-  lpTotalSupply: bigint;
-  lpWalletCode: Cell;
-  precisionMul: bigint[];
-  plugin: Dictionary<bigint, Cell>;
-};
-
-export type ProofCell = {
-  baseCode: Cell;
-  factory: Address;
-};
-
-export type PoolData = {
-  contractType: ContractType;
-  poolType: PoolType;
-  admin: Address;
-  signerKey: Buffer;
-  status: PoolStatus;
-  usePrice: boolean;
-  baseLpIndex: bigint;
-  assets: Asset[];
-  reserveData: ReserveData;
-  basicData: BasicInfo;
-  proofInfo: ProofCell;
-};
-
-function parsePool(sc: Slice, contractType: ContractType, poolType: PoolType): PoolData {
-  const admin = sc.loadAddress();
-  const signerKeyInt = sc.loadUintBig(256);
-  const signerKey = Buffer.from(signerKeyInt.toString(16), 'hex');
-  const status = sc.loadBoolean() ? PoolStatus.IS_STOP : PoolStatus.ACTIVE;
-  const usePrice = sc.loadBoolean();
-  const baseLpIndex = sc.loadUintBig(4);
-  const assets = parseAssetsFromNestedCell(sc.loadRef());
-  const reserveCell = sc.loadRef();
-  const reserveSc = reserveCell.beginParse();
-  const reserveData: ReserveData = {
-    reserves: parseCoinsFromNestedCell(reserveSc.loadRef()).map((item, index) => {
-      return new Allocation({ asset: assets[index], amount: item });
-    }),
-    adminFees: parseCoinsFromNestedCell(reserveSc.loadRef()).map((item, index) => {
-      return new Allocation({ asset: assets[index], amount: item });
-    }),
-  };
-  const basicInfoCell = sc.loadRef();
-  const basicInfoSc = basicInfoCell.beginParse();
-  const basicData: BasicInfo = {
-    feeNumerator: BigInt(basicInfoSc.loadCoins()),
-    adminFeeNumerator: BigInt(basicInfoSc.loadCoins()),
-    initA: BigInt(basicInfoSc.loadUint(20)),
-    futureA: BigInt(basicInfoSc.loadUint(20)),
-    initATime: BigInt(basicInfoSc.loadUint(32)),
-    futureATime: BigInt(basicInfoSc.loadUint(32)),
-    lpTotalSupply: BigInt(basicInfoSc.loadCoins()),
-    lpWalletCode: basicInfoSc.loadRef(),
-    precisionMul: parseCoinsFromNestedCell(basicInfoSc.loadRef()),
-    plugin: basicInfoSc.loadDict(Dictionary.Keys.BigUint(4), Dictionary.Values.Cell()),
-  };
-  const proofCell = sc.loadRef();
-  const proofSc = proofCell.beginParse();
-  const proofInfo = {
-    baseCode: proofSc.loadRef(),
-    factory: proofSc.loadAddress(),
-  };
-  return {
-    contractType,
-    poolType,
-    admin,
-    signerKey,
-    status,
-    usePrice,
-    baseLpIndex,
-    assets,
-    reserveData,
-    basicData,
-    proofInfo,
-  };
-}
+import { Allocation, Asset, parseAssetsFromNestedCell, storeCoinsNested } from '@torch-finance/core';
+import { parsePool, PoolData } from './storage';
 
 export class Pool implements Contract {
   constructor(readonly address: Address) {}
@@ -107,12 +10,14 @@ export class Pool implements Contract {
     return new Pool(address);
   }
 
+  // Get ordered assets in this pool
   async getAssets(provider: ContractProvider): Promise<Asset[]> {
     const res = await provider.get('get_assets', []);
     const cell = res.stack.readCell();
     return parseAssetsFromNestedCell(cell);
   }
 
+  // Get lp token jetton wallet address for owner
   async getWalletAddress(provider: ContractProvider, owner: Address): Promise<Address> {
     const res = await provider.get('get_wallet_address', [
       {
@@ -123,29 +28,24 @@ export class Pool implements Contract {
     return res.stack.readAddress();
   }
 
+  // Get pool data
   async getPoolData(provider: ContractProvider): Promise<PoolData> {
     const res = await provider.get('get_pool_data', []);
     const sc = res.stack.readCell().beginParse();
-    const contractType = BigInt(sc.loadUint(5)) as ContractType;
-    const poolType = sc.loadUint(4) as PoolType;
-    switch (poolType) {
-      case PoolType.BASE:
-      case PoolType.META:
-        return {
-          ...parsePool(sc, contractType, poolType),
-        };
-
-      default:
-        throw new Error('Unsupported pool type');
-    }
+    return parsePool(sc);
   }
 
+  // Get virtual price of the pool
   async getVirtualPrice(provider: ContractProvider, rates?: Allocation[]): Promise<bigint> {
     const vp = await provider.get('get_virtual_price', [
-      {
-        type: 'cell',
-        cell: rates ? storeCoinsNested(rates.map((rate) => rate.amount)) : beginCell().endCell(),
-      },
+      rates
+        ? {
+            type: 'cell',
+            cell: storeCoinsNested(rates.map((rate) => rate.amount)),
+          }
+        : {
+            type: 'null',
+          },
     ]);
 
     const virtualPrice = vp.stack.readBigNumber();
