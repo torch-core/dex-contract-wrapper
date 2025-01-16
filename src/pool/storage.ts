@@ -20,13 +20,13 @@ export type ReserveData = {
 export type BasicData = {
   feeNumerator: bigint;
   adminFeeNumerator: bigint;
-  initA: bigint;
-  futureA: bigint;
-  initATime: bigint;
-  futureATime: bigint;
+  initA: number;
+  futureA: number;
+  initATime: number;
+  futureATime: number;
   lpTotalSupply: bigint;
   lpWalletCode: Cell;
-  precisionMultipliers: bigint[];
+  decimals: Allocation[];
   plugins: Dictionary<bigint, Cell>;
 };
 
@@ -75,15 +75,17 @@ export function parsePool(sc: Slice): PoolData {
   const basicInfoCell = sc.loadRef();
   const basicInfoSc = basicInfoCell.beginParse();
   const basicData: BasicData = {
-    feeNumerator: BigInt(basicInfoSc.loadCoins()),
-    adminFeeNumerator: BigInt(basicInfoSc.loadCoins()),
-    initA: BigInt(basicInfoSc.loadUint(AMPLIFICATION_FACTOR_SIZE)),
-    futureA: BigInt(basicInfoSc.loadUint(AMPLIFICATION_FACTOR_SIZE)),
-    initATime: BigInt(basicInfoSc.loadUint(TIMESTAMP_SIZE)),
-    futureATime: BigInt(basicInfoSc.loadUint(TIMESTAMP_SIZE)),
-    lpTotalSupply: BigInt(basicInfoSc.loadCoins()),
+    feeNumerator: basicInfoSc.loadCoins(),
+    adminFeeNumerator: basicInfoSc.loadCoins(),
+    initA: basicInfoSc.loadUint(AMPLIFICATION_FACTOR_SIZE),
+    futureA: basicInfoSc.loadUint(AMPLIFICATION_FACTOR_SIZE),
+    initATime: basicInfoSc.loadUint(TIMESTAMP_SIZE),
+    futureATime: basicInfoSc.loadUint(TIMESTAMP_SIZE),
+    lpTotalSupply: basicInfoSc.loadCoins(),
     lpWalletCode: basicInfoSc.loadRef(),
-    precisionMultipliers: parseCoinsFromNestedCell(basicInfoSc.loadRef()),
+    decimals: parseCoinsFromNestedCell(basicInfoSc.loadRef()).map((item, index) => {
+      return new Allocation({ asset: assets[index], amount: 18n - item });
+    }),
     plugins: basicInfoSc.loadDict(Dictionary.Keys.BigUint(4), Dictionary.Values.Cell()),
   };
   const proofCell = sc.loadRef();
