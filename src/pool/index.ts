@@ -63,7 +63,7 @@ export class Pool implements Contract {
 
   // Simulate
   async simulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulatorDepositResult> {
-    const res = await provider.get('simulate_deposit', [
+    const simulateDepositResult = await provider.get('simulate_deposit', [
       {
         type: 'cell',
         cell: storeCoinsNested(params.depositAmounts.map((amount) => amount.value)),
@@ -78,16 +78,16 @@ export class Pool implements Contract {
           },
     ]);
 
-    const lpTokenOut = res.stack.readBigNumber();
-    const virtualPriceBefore = res.stack.readBigNumber();
-    const virtualPriceAfter = res.stack.readBigNumber();
-    const lpTotalSupply = res.stack.readBigNumber();
+    const lpTokenOut = simulateDepositResult.stack.readBigNumber();
+    const virtualPriceBefore = simulateDepositResult.stack.readBigNumber();
+    const virtualPriceAfter = simulateDepositResult.stack.readBigNumber();
+    const lpTotalSupply = simulateDepositResult.stack.readBigNumber();
 
     return { lpTokenOut, virtualPriceBefore, virtualPriceAfter, lpTotalSupply };
   }
 
   async getSimulateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulatorSwapResult> {
-    const simulateSwap = await provider.get('get_simulate_swap', [
+    const simulateSwapResult = await provider.get('get_simulate_swap', [
       {
         type: 'cell',
         cell: params.assetIn.toCell(),
@@ -110,9 +110,9 @@ export class Pool implements Contract {
           },
     ]);
 
-    const amountOut = simulateSwap.stack.readBigNumber();
-    const virtualPriceBefore = simulateSwap.stack.readBigNumber();
-    const virtualPriceAfter = simulateSwap.stack.readBigNumber();
+    const amountOut = simulateSwapResult.stack.readBigNumber();
+    const virtualPriceBefore = simulateSwapResult.stack.readBigNumber();
+    const virtualPriceAfter = simulateSwapResult.stack.readBigNumber();
     return {
       amountOut,
       virtualPriceBefore,
@@ -124,7 +124,7 @@ export class Pool implements Contract {
     provider: ContractProvider,
     params: SimulateWithdrawParams,
   ): Promise<SimulateWithdrawResult> {
-    const simulateRemoveLiquidity = await provider.get('get_simulate_withdraw', [
+    const simulateWithdrawResult = await provider.get('get_simulate_withdraw', [
       {
         type: 'int',
         value: params.lpAmount,
@@ -144,14 +144,14 @@ export class Pool implements Contract {
             type: 'null',
           },
     ]);
-    const amountOutsTuple = simulateRemoveLiquidity.stack.readTuple();
+    const amountOutsTuple = simulateWithdrawResult.stack.readTuple();
 
     const amountOuts = [];
     while (amountOutsTuple.remaining > 0) {
       amountOuts.push(amountOutsTuple.readBigNumber());
     }
-    const virtualPriceBefore = simulateRemoveLiquidity.stack.readBigNumber();
-    const virtualPriceAfter = simulateRemoveLiquidity.stack.readBigNumber();
+    const virtualPriceBefore = simulateWithdrawResult.stack.readBigNumber();
+    const virtualPriceAfter = simulateWithdrawResult.stack.readBigNumber();
 
     return {
       amountOuts,
