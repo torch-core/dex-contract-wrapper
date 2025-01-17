@@ -49,7 +49,7 @@ export class Pool implements Contract {
       rates
         ? {
             type: 'cell',
-            cell: storeCoinsNested(rates.map((rate) => rate.amount)),
+            cell: storeCoinsNested(rates.map((rate) => rate.value)),
           }
         : {
             type: 'null',
@@ -66,12 +66,12 @@ export class Pool implements Contract {
     const res = await provider.get('simulate_deposit', [
       {
         type: 'cell',
-        cell: storeCoinsNested(params.depositAmounts.map((amount) => amount.amount)),
+        cell: storeCoinsNested(params.depositAmounts.map((amount) => amount.value)),
       },
       params.rates
         ? {
             type: 'cell',
-            cell: storeCoinsNested(params.rates.map((rate) => rate.amount)),
+            cell: storeCoinsNested(params.rates.map((rate) => rate.value)),
           }
         : {
             type: 'null',
@@ -103,7 +103,7 @@ export class Pool implements Contract {
       params.rates
         ? {
             type: 'cell',
-            cell: storeCoinsNested(params.rates.map((rate) => rate.amount)),
+            cell: storeCoinsNested(params.rates.map((rate) => rate.value)),
           }
         : {
             type: 'null',
@@ -138,7 +138,7 @@ export class Pool implements Contract {
       params.rates
         ? {
             type: 'cell',
-            cell: storeCoinsNested(params.rates.map((rate) => rate.amount)),
+            cell: storeCoinsNested(params.rates.map((rate) => rate.value)),
           }
         : {
             type: 'null',
