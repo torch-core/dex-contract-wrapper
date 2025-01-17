@@ -34,10 +34,10 @@ export class LpAccount implements Contract {
     const currentBalancesCell = parseCoinsFromNestedCell(res.stack.readCell());
     const targetBalancesCell = parseCoinsFromNestedCell(res.stack.readCell());
     const currentBalances = Allocation.createAllocations(
-      assets.map((asset, index) => ({ asset, amount: currentBalancesCell[index] })),
+      assets.map((asset, index) => ({ asset, value: currentBalancesCell[index] })),
     );
     const targetBalances = Allocation.createAllocations(
-      assets.map((asset, index) => ({ asset, amount: targetBalancesCell[index] })),
+      assets.map((asset, index) => ({ asset, value: targetBalancesCell[index] })),
     );
     const baseCode = res.stack.readCell();
     const factory = res.stack.readAddress();

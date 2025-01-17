@@ -66,10 +66,10 @@ export function parsePool(sc: Slice): PoolData {
   const reserveSc = reserveCell.beginParse();
   const reserveData: ReserveData = {
     reserves: parseCoinsFromNestedCell(reserveSc.loadRef()).map((item, index) => {
-      return new Allocation({ asset: assets[index], amount: item });
+      return new Allocation({ asset: assets[index], value: item });
     }),
     adminFees: parseCoinsFromNestedCell(reserveSc.loadRef()).map((item, index) => {
-      return new Allocation({ asset: assets[index], amount: item });
+      return new Allocation({ asset: assets[index], value: item });
     }),
   };
   const basicInfoCell = sc.loadRef();
@@ -84,7 +84,7 @@ export function parsePool(sc: Slice): PoolData {
     lpTotalSupply: basicInfoSc.loadCoins(),
     lpWalletCode: basicInfoSc.loadRef(),
     decimals: parseCoinsFromNestedCell(basicInfoSc.loadRef()).map((item, index) => {
-      return new Allocation({ asset: assets[index], amount: 18n - item });
+      return new Allocation({ asset: assets[index], value: 18n - item });
     }),
     plugins: basicInfoSc.loadDict(Dictionary.Keys.BigUint(4), Dictionary.Values.Cell()),
   };
