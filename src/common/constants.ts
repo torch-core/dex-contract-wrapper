@@ -1,9 +1,19 @@
-// Common
-export const TIMESTAMP_SIZE = 32;
+import { toNano } from '@ton/core';
 
-// Contract Specific
-export const CONTRACT_TYPE_SIZE = 5;
-export const POOL_TYPE_SIZE = 4;
-export const SIGNER_KEY_SIZE = 256;
-export const AMPLIFICATION_FACTOR_SIZE = 20;
-export const BASE_LP_INDEX_SIZE = 4;
+export abstract class Size {
+  static readonly Op = 32;
+  static readonly QueryId = 64;
+  static readonly Timestamp = 32;
+  static readonly SignerKey = 256;
+  static readonly AmplificationFactor = 20;
+  static readonly BaseLpIndex = 4;
+  static readonly ContractType = 5;
+  static readonly PoolType = 4;
+  static readonly NextType = 4;
+  static readonly Signature = 64;
+}
+
+export abstract class Gas {
+  static readonly JettonTransfer = toNano('0.065');
+  static readonly deposit = toNano('0.3');
+}
