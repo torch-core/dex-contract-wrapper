@@ -20,6 +20,7 @@ export abstract class ExitCode {
   static InvalidDepositOneAmount = 1019;
   static SameAsset = 1021;
   static InvalidDepositSender = 1022;
+  static NotSuitableD = 2000;
   static InvalidLiquidity = 2001;
   static InvalidRampA = 2003;
   static InvalidRampTime = 2004;
@@ -29,6 +30,7 @@ export abstract class ExitCode {
   static InvalidAdminFee = 2008;
   static InvalidFee = 2009;
   static InvalidAChange = 2010;
+  static IncorrectDepositTarget = 2012;
 
   static WrongBaseAsset = 3000;
   static WrongMetaAsset = 3001;
@@ -44,8 +46,6 @@ export abstract class ExitCode {
         return 'Not deployer';
       case ExitCode.NotAdmin:
         return 'Not admin';
-      case ExitCode.InvalidAssetType:
-        return 'Invalid asset type';
       case ExitCode.NotSupportedAssetType:
         return 'Not supported asset type';
       case ExitCode.NotVault:
@@ -112,6 +112,10 @@ export abstract class ExitCode {
         return 'Undefined opcode';
       case ExitCode.DuplicateDeposit:
         return 'Dulplicate deposit';
+      case ExitCode.NotSuitableD:
+        return 'Not suitable D';
+      case ExitCode.IncorrectDepositTarget:
+        return 'Incorrect deposit target';
       default:
         return `Unknown Exit Code: ${code}`;
     }

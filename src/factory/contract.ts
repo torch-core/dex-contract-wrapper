@@ -14,7 +14,7 @@ import {
 import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, WithdrawPayload } from './type';
 import { Pool } from '../pool';
 import { getVaultProof, packMinAmount } from './pack';
-import { GasCalculator } from './gas';
+import { computeGasForSwapChain, Gas, computeForwardFees } from './gas';
 
 export class Factory implements Contract {
   constructor(readonly address: Address) {}
@@ -211,9 +211,9 @@ export class Factory implements Contract {
 
     // Compute the gas for the swap
     const swapGas =
-      GasCalculator.SWAP_GAS + // Swap gas in the first pool
-      (payload.next ? GasCalculator.computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
-      GasCalculator.computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      Gas.SWAP_GAS + // Swap gas in the first pool
+      (payload.next ? computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
+      computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     switch (payload.assetIn.type) {
       case AssetType.TON: {
@@ -234,7 +234,7 @@ export class Factory implements Contract {
         const forwardPayload = beginCell().store(this.storeSwap(payload)).endCell();
         return {
           to: senderJettonWallet,
-          value: swapGas + GasCalculator.JETTON_TRANSFER_GAS,
+          value: swapGas + Gas.JETTON_TRANSFER_GAS,
           body: beginCell()
             .storeUint(Op.Jetton.Transfer, Size.Op)
             .storeUint(payload.queryId, Size.QueryId)
@@ -265,9 +265,9 @@ export class Factory implements Contract {
 
     // Compute the gas for the deposit
     const depositGas =
-      GasCalculator.DEPOSIT_GAS + // Deposit gas in the first pool
-      (payload.next ? GasCalculator.DEPOSIT_OR_SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
-      GasCalculator.computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      Gas.DEPOSIT_GAS + // Deposit gas in the first pool
+      (payload.next ? Gas.DEPOSIT_OR_SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
+      computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
@@ -295,7 +295,7 @@ export class Factory implements Contract {
           const forwardPayload = beginCell().store(this.storeDeposit(payload)).endCell();
           senderArgs.push({
             to: senderJettonWallet,
-            value: depositGas + GasCalculator.JETTON_TRANSFER_GAS,
+            value: depositGas + Gas.JETTON_TRANSFER_GAS,
             body: beginCell()
               .storeUint(Op.Jetton.Transfer, Size.Op)
               .storeUint(payload.queryId, Size.QueryId)
@@ -327,7 +327,7 @@ export class Factory implements Contract {
     const lpVaultAddress = await this.getAddress(provider, getVaultProof(lpAsset));
 
     // Compute the gas for the withdraw
-    const withdrawGas = GasCalculator.WITHDRAW_GAS + (payload.next ? GasCalculator.WITHDRAW_NEXT_GAS : 0n);
+    const withdrawGas = Gas.WITHDRAW_GAS + (payload.next ? Gas.WITHDRAW_NEXT_GAS : 0n);
 
     // Get sender lp wallet address
     const jettonMaster = provider.open(JettonMaster.create(payload.poolAddress));
@@ -336,7 +336,7 @@ export class Factory implements Contract {
 
     return {
       to: senderJettonWallet,
-      value: withdrawGas + GasCalculator.JETTON_TRANSFER_GAS,
+      value: withdrawGas + Gas.JETTON_TRANSFER_GAS,
       body: beginCell()
         .storeUint(Op.Jetton.Transfer, Size.Op)
         .storeUint(payload.queryId, Size.QueryId)

@@ -1,5 +1,3 @@
-import { toNano } from '@ton/core';
-
 export abstract class Size {
   static readonly Op = 32;
   static readonly QueryId = 64;
@@ -11,9 +9,4 @@ export abstract class Size {
   static readonly PoolType = 4;
   static readonly NextType = 4;
   static readonly Signature = 64;
-}
-
-export abstract class Gas {
-  static readonly JettonTransfer = toNano('0.065');
-  static readonly deposit = toNano('0.3');
 }
