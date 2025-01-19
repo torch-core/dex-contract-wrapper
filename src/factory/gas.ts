@@ -13,7 +13,7 @@ export abstract class Gas {
   static readonly DEPOSIT_GAS = toNano('0.2');
   static readonly SWAP_GAS = toNano('0.18');
   static readonly WITHDRAW_GAS = toNano('0.4');
-  static readonly DEPOSI_OR_SWAP_NEXT_GAS = toNano('0.1');
+  static readonly DEPOSI_OR_SWAP_NEXT_GAS = toNano('0.1'); // Deposit and swap next use the same gas
   static readonly WITHDRAW_NEXT_GAS = toNano('0.35');
 }
 
