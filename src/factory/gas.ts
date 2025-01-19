@@ -13,7 +13,7 @@ export abstract class Gas {
   static readonly DEPOSIT_GAS = toNano('0.2');
   static readonly SWAP_GAS = toNano('0.18');
   static readonly WITHDRAW_GAS = toNano('0.4');
-  static readonly SWAP_NEXT_GAS = toNano('0.1');
+  static readonly DEPOSI_OR_SWAP_NEXT_GAS = toNano('0.1');
   static readonly WITHDRAW_NEXT_GAS = toNano('0.35');
 }
 
@@ -41,10 +41,10 @@ export class GasCalculator {
     if (!next) return 0n;
 
     if (next.type === 'swap' && next.next) {
-      return Gas.SWAP_NEXT_GAS + this.computeGasForSwapChain(next.next);
+      return Gas.DEPOSI_OR_SWAP_NEXT_GAS + this.computeGasForSwapChain(next.next);
     }
 
-    return Gas.SWAP_NEXT_GAS;
+    return Gas.DEPOSI_OR_SWAP_NEXT_GAS;
   }
 
   static computeForwardFees(numTxs: bigint, fulfillPayload?: Cell | null, rejectPayload?: Cell | null): bigint {
