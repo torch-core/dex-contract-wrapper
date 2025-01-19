@@ -1,7 +1,6 @@
-import { Address, Cell } from '@ton/core';
+import { Address, Cell, Dictionary } from '@ton/core';
 import { Allocation, SignedRate } from '@torch-finance/core';
 import { Asset } from '@torch-finance/core';
-import { ExtraPayload } from '../common';
 
 /**
  * Configuration for a deposit transaction.
@@ -38,7 +37,7 @@ type DepositConfig = {
   /**
    * Reserved for future use. Currently unsupported extra payload.
    */
-  extraPayload?: ExtraPayload | null;
+  extraPayload?: Dictionary<bigint, Cell> | null;
 };
 
 /**
@@ -114,7 +113,7 @@ type SwapConfig = {
   /**
    * Currently unsupported extra payload.
    */
-  extraPayload?: ExtraPayload | null;
+  extraPayload?: Dictionary<bigint, Cell> | null;
 };
 
 /**
@@ -187,7 +186,7 @@ type SingleWithdrawConfig = {
   /**
    * Reserved for future use. Currently unsupported extra payload.
    */
-  extraPayload?: ExtraPayload | null;
+  extraPayload?: Dictionary<bigint, Cell> | null;
 };
 
 /**
@@ -202,6 +201,7 @@ type BalancedWithdrawConfig = {
   /**
    * The minimum amounts of each asset expected to receive from the withdrawal.
    * Transactions that yield less than these amounts will fail.
+   * Please ensure that minAmountOut is normalized according to the pool assets before passing it in.
    */
   minAmountOut?: Allocation[] | null;
 
@@ -214,7 +214,7 @@ type BalancedWithdrawConfig = {
   /**
    * Reserved for future use. Currently unsupported extra payload.
    */
-  extraPayload?: ExtraPayload | null;
+  extraPayload?: Dictionary<bigint, Cell> | null;
 };
 
 /**

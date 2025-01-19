@@ -1,23 +1,26 @@
-import { Address, beginCell, Builder, Contract, ContractProvider, Dictionary, SenderArguments } from '@ton/core';
+import { Address, beginCell, Builder, Cell, Contract, ContractProvider, Dictionary, SenderArguments } from '@ton/core';
+import { JettonMaster } from '@ton/ton';
 import { ContractType, NextType, Op, Size } from '../common';
 import { FactoryData } from './storage';
-import { Allocation, coinsMarshaller, SignedRate, storeCoinsNested } from '@torch-finance/core';
+import {
+  Asset,
+  AssetType,
+  coinsMarshaller,
+  normalize,
+  SignedRate,
+  storeCoinsNested,
+  storeSortedAssetsNested,
+} from '@torch-finance/core';
 import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, WithdrawPayload } from './type';
+import { Pool } from '../pool';
+import { getVaultProof, packMinAmount } from './pack';
+import { GasCalculator } from './gas';
 
 export class Factory implements Contract {
   constructor(readonly address: Address) {}
 
   static createFromAddress(address: Address) {
     return new Factory(address);
-  }
-
-  private packMinAmount(minAmountOut: Allocation[] | Allocation) {
-    // withdraw balance in all assets
-    if (Array.isArray(minAmountOut)) {
-      return storeCoinsNested(minAmountOut.map((alloc) => alloc.value));
-    }
-    // if only one asset is non-zero, it is the asset out
-    return beginCell().storeCoins(minAmountOut.value).endCell();
   }
 
   private storeSwapNext(src: SwapNext) {
@@ -44,7 +47,7 @@ export class Factory implements Contract {
 
   private storeWithdrawNext(src: WithdrawNext) {
     const assetOut = src.config?.mode === 'single' ? src.config.assetOut.toCell() : null;
-    const minAmountOut = src.config?.minAmountOut ? this.packMinAmount(src.config.minAmountOut) : null;
+    const minAmountOut = src.config?.minAmountOut ? packMinAmount(src.config.minAmountOut) : null;
     return (b: Builder) => {
       b.storeUint(NextType.Withdraw, Size.NextType)
         .storeAddress(src.nextPoolAddress)
@@ -68,23 +71,128 @@ export class Factory implements Contract {
     };
   }
 
-  private storeSwap(src: SwapPayload) {
+  private storeSwap(payload: SwapPayload) {
+    // Prepare deadline time. If blockchain time > deadline, then vault will refund
     const defaultDeadline = BigInt(Math.floor(Date.now() / 1000) + 10 * 60); // 10 minutes
-    const nextCell = src.next ? beginCell().store(this.storeNext(src.next)).endCell() : null;
-    return (b: Builder) => {
-      b.storeUint(Op.Vault.Swap, Size.Op)
-        .storeAddress(src.poolAddress)
-        .storeRef(src.assetOut.toCell())
-        .storeUint(src?.config?.deadline ?? defaultDeadline, Size.Timestamp)
-        .storeMaybeRef()
+    const deadline = payload.config?.deadline ?? defaultDeadline;
+
+    // Prepare signed rate if pool needs it
+    const signedRateCell = payload.config?.signedRate
+      ? beginCell().store(this.storeSignedRate(payload.config.signedRate)).endCell()
+      : null;
+
+    // Prepare swap config if it exists
+    const swapConfigCell = payload.config
+      ? beginCell()
+          .storeCoins(payload.config.minAmountOut ?? 0)
+          .storeAddress(payload.config.recipient)
+          .storeMaybeRef(signedRateCell)
+          .storeMaybeRef(payload.config.fulfillPayload)
+          .storeMaybeRef(payload.config.rejectPayload)
+          .storeDict(payload.config.extraPayload)
+          .endCell()
+      : null;
+
+    // Prepare next operation if it exists (swap or withdraw)
+    const nextCell = payload.next ? beginCell().store(this.storeNext(payload.next)).endCell() : null;
+
+    return (builder: Builder) => {
+      builder
+        .storeUint(Op.Vault.Swap, Size.Op)
+        .storeAddress(payload.poolAddress)
+        .storeRef(payload.assetOut.toCell())
+        .storeUint(deadline, Size.Timestamp)
+        .storeMaybeRef(swapConfigCell)
         .storeMaybeRef(nextCell)
         .endCell();
     };
   }
 
-  private storeDeposit(payload: DepositPayload) {}
+  private storeDeposit(payload: DepositPayload) {
+    // Prepare target cell for deposit in the pool
+    const targetCell = storeCoinsNested(payload.depositAmounts.map((alloc) => alloc.value));
 
-  private storeWithdraw(payload: WithdrawPayload) {}
+    // Prepare assets cell for deposit. Only when deposit one
+    // There are three scenarios where only one asset will be wrapped for deposit:
+    // 1. depositAmounts contains only one asset, and there is no next.
+    // 2. depositAmounts contains only one asset, there is a next, but the meta amount in next is 0.
+    // 3. depositAmounts contains only one asset, there is a next, and the next type is swap.
+    let assetsCell: Cell | null = null;
+    const isDepositOne = payload.depositAmounts.filter((alloc) => alloc.value > 0).length === 1;
+    if (
+      isDepositOne &&
+      (!payload.next ||
+        (payload.next &&
+          (payload.next.type === 'swap' || (payload.next.type === 'deposit' && !payload.next?.metaAmount))))
+    ) {
+      // Deposit only one asset
+      assetsCell = beginCell().storeRef(payload.depositAmounts[0].asset.toCell()).endCell();
+    } else {
+      // Deposit multiple assets
+      assetsCell = storeSortedAssetsNested(payload.depositAmounts.map((alloc) => alloc.asset));
+    }
+
+    // Prepare signed rate if pool needs it
+    const signedRateCell = payload.config?.signedRate
+      ? beginCell().store(this.storeSignedRate(payload.config.signedRate)).endCell()
+      : null;
+
+    // Prepare deposit config if it exists
+    const configCell = payload.config
+      ? beginCell()
+          .storeCoins(payload.config.minLpAmount ?? 0)
+          .storeAddress(payload.config.recipient)
+          .storeMaybeRef(signedRateCell)
+          .endCell()
+      : null;
+
+    // Prepare next operation if it exists (swap or deposit)
+    const nextCell = payload.next ? beginCell().store(this.storeNext(payload.next)).endCell() : null;
+
+    return (builder: Builder) => {
+      builder
+        .storeUint(Op.Vault.Deposit, Size.Op)
+        .storeAddress(payload.poolAddress)
+        .storeRef(assetsCell)
+        .storeRef(targetCell)
+        .storeMaybeRef(configCell)
+        .storeMaybeRef(nextCell)
+        .endCell();
+    };
+  }
+
+  private storeWithdraw(payload: WithdrawPayload) {
+    // Handle withdraw config base on the mode
+    // Default is withdraw balanced if not provided
+    let assetOut: Cell | null = null;
+
+    // If it is single withdraw mode, set assetOut
+    if (payload.config?.mode === 'single') {
+      assetOut = payload.config.assetOut.toCell();
+    }
+
+    // Prepare signed rate if pool needs it
+    const signedRateCell = payload.config?.signedRate
+      ? beginCell().store(this.storeSignedRate(payload.config.signedRate)).endCell()
+      : null;
+
+    // Prepare min amount out for the first pool if it exists
+    const minAmountOut = payload.config?.minAmountOut ? packMinAmount(payload.config.minAmountOut) : null;
+
+    // Prepare next operation if it exists (withdraw)
+    const nextCell = payload.next ? beginCell().store(this.storeNext(payload.next)).endCell() : null;
+
+    return (builder: Builder) => {
+      builder
+        .storeUint(Op.Vault.Withdraw, Size.Op)
+        .storeAddress(payload.recipient)
+        .storeMaybeRef(signedRateCell)
+        .storeMaybeRef(assetOut)
+        .storeMaybeRef(beginCell().storeMaybeRef(minAmountOut).storeDict(payload.config?.extraPayload).endCell())
+        .storeMaybeRef(nextCell)
+        .endCell();
+    };
+  }
 
   private storeSignedRate(src: SignedRate) {
     return (b: Builder) => {
@@ -97,19 +205,150 @@ export class Factory implements Contract {
     };
   }
 
-  async getSwapPayload(provider: ContractProvider, sender: Address, payload: SwapPayload) {}
+  async getSwapPayload(provider: ContractProvider, sender: Address, payload: SwapPayload): Promise<SenderArguments> {
+    // Get vault address
+    const vaultAddress = await this.getAddress(provider, getVaultProof(payload.assetIn));
+
+    // Compute the gas for the swap
+    const swapGas =
+      GasCalculator.SWAP_GAS + // Swap gas in the first pool
+      (payload.next ? GasCalculator.computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
+      GasCalculator.computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+
+    switch (payload.assetIn.type) {
+      case AssetType.TON: {
+        return {
+          to: vaultAddress,
+          value: payload.amountIn + swapGas,
+          body: beginCell()
+            .storeUint(Op.Vault.Swap, Size.Op)
+            .storeUint(payload.queryId, Size.QueryId)
+            .storeCoins(payload.amountIn)
+            .storeRef(beginCell().store(this.storeSwap(payload)).endCell())
+            .endCell(),
+        };
+      }
+      case AssetType.JETTON: {
+        const jettonMaster = provider.open(JettonMaster.create(payload.assetIn.jettonMaster as Address));
+        const senderJettonWallet = await jettonMaster.getWalletAddress(sender);
+        const forwardPayload = beginCell().store(this.storeSwap(payload)).endCell();
+        return {
+          to: senderJettonWallet,
+          value: swapGas + GasCalculator.JETTON_TRANSFER_GAS,
+          body: beginCell()
+            .storeUint(Op.Jetton.Transfer, Size.Op)
+            .storeUint(payload.queryId, Size.QueryId)
+            .storeCoins(payload.amountIn)
+            .storeAddress(vaultAddress) // destination is the vault
+            .storeAddress(sender) // response destination address is the sender
+            .storeMaybeRef(null) // customPayload is null for now
+            .storeCoins(swapGas) // Forward TON
+            .storeMaybeRef(forwardPayload)
+            .endCell(),
+        };
+      }
+      case AssetType.EXTRA_CURRENCY:
+        throw new Error('Extra currency is not supported');
+    }
+  }
 
   async getDepositPayload(
     provider: ContractProvider,
     sender: Address,
     payload: DepositPayload,
-  ): Promise<SenderArguments> {}
+  ): Promise<SenderArguments[]> {
+    // Normalized the original deposit amount (It will only normalize the assets that are in the first pool)
+    const { depositAmounts: originalDepositAmounts } = payload;
+    const firstPool = provider.open(Pool.createFromAddress(payload.poolAddress));
+    const firstPoolAssets = await firstPool.getAssets();
+    payload.depositAmounts = normalize(originalDepositAmounts, firstPoolAssets);
+
+    // Compute the gas for the deposit
+    const depositGas =
+      GasCalculator.DEPOSIT_GAS + // Deposit gas in the first pool
+      (payload.next ? GasCalculator.DEPOSIT_OR_SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
+      GasCalculator.computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+
+    // Create sendArgs for each deposit
+    const senderArgs: SenderArguments[] = [];
+    for (let i = 0; i < originalDepositAmounts.length; i++) {
+      const { asset, value } = originalDepositAmounts[i];
+      switch (asset.type) {
+        case AssetType.TON: {
+          const tonVaultAddress = await this.getAddress(provider, getVaultProof(asset));
+          senderArgs.push({
+            to: tonVaultAddress,
+            value: value + depositGas,
+            body: beginCell()
+              .storeUint(Op.Vault.Deposit, Size.Op)
+              .storeUint(payload.queryId, Size.QueryId)
+              .storeCoins(value) // Deposit TON amount
+              .storeRef(beginCell().store(this.storeDeposit(payload)).endCell())
+              .endCell(),
+          });
+          break;
+        }
+        case AssetType.JETTON: {
+          const jettonVault = await this.getAddress(provider, getVaultProof(asset));
+          const jettonMaster = provider.open(JettonMaster.create(asset.jettonMaster as Address));
+          const senderJettonWallet = await jettonMaster.getWalletAddress(sender);
+          const forwardPayload = beginCell().store(this.storeDeposit(payload)).endCell();
+          senderArgs.push({
+            to: senderJettonWallet,
+            value: depositGas + GasCalculator.JETTON_TRANSFER_GAS,
+            body: beginCell()
+              .storeUint(Op.Jetton.Transfer, Size.Op)
+              .storeUint(payload.queryId, Size.QueryId)
+              .storeCoins(value) // deposit gas + forward ton gas
+              .storeAddress(jettonVault) // destination is the jetton vault
+              .storeAddress(sender) // response destination address is the sender
+              .storeMaybeRef(null) // customPayload is null for now
+              .storeCoins(depositGas) // Forward TON
+              .storeMaybeRef(forwardPayload)
+              .endCell(),
+          });
+          break;
+        }
+        case AssetType.EXTRA_CURRENCY:
+          // pack extra currency asset
+          throw new Error('Extra currency is not supported');
+      }
+    }
+    return senderArgs;
+  }
 
   async getWithdrawPayload(
     provider: ContractProvider,
     sender: Address,
     payload: WithdrawPayload,
-  ): Promise<SenderArguments> {}
+  ): Promise<SenderArguments> {
+    // Get lp vault address
+    const lpAsset = Asset.jetton(payload.poolAddress);
+    const lpVaultAddress = await this.getAddress(provider, getVaultProof(lpAsset));
+
+    // Compute the gas for the withdraw
+    const withdrawGas = GasCalculator.WITHDRAW_GAS + (payload.next ? GasCalculator.WITHDRAW_NEXT_GAS : 0n);
+
+    // Get sender lp wallet address
+    const jettonMaster = provider.open(JettonMaster.create(payload.poolAddress));
+    const senderJettonWallet = await jettonMaster.getWalletAddress(sender);
+    const forwardPayload = beginCell().store(this.storeWithdraw(payload)).endCell();
+
+    return {
+      to: senderJettonWallet,
+      value: withdrawGas + GasCalculator.JETTON_TRANSFER_GAS,
+      body: beginCell()
+        .storeUint(Op.Jetton.Transfer, Size.Op)
+        .storeUint(payload.queryId, Size.QueryId)
+        .storeCoins(payload.burnLpAmount)
+        .storeAddress(lpVaultAddress) // destination is the lp vault
+        .storeAddress(sender) // response destination address is the sender
+        .storeMaybeRef(null) // customPayload is null for now
+        .storeCoins(withdrawGas) // Forward TON
+        .storeMaybeRef(forwardPayload)
+        .endCell(),
+    };
+  }
 
   async getFactoryData(provider: ContractProvider): Promise<FactoryData> {
     const data = await provider.get('get_factory_data', []);
@@ -143,5 +382,16 @@ export class Factory implements Contract {
       lpWalletCode,
       adminFeeConfig,
     };
+  }
+
+  // Get contract address from proof
+  async getAddress(provider: ContractProvider, proof: bigint): Promise<Address> {
+    const res = await provider.get('get_address', [
+      {
+        type: 'int',
+        value: proof,
+      },
+    ]);
+    return res.stack.readAddress();
   }
 }
