@@ -14,7 +14,7 @@ import {
 import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, WithdrawPayload } from './type';
 import { Pool } from '../pool';
 import { getVaultProof, packMinAmount } from './pack';
-import { computeGasForSwapChain, Gas, computeForwardFees, NumTxs } from './gas';
+import { Gas, GasCalculator, NumTxs } from './gas';
 
 export class Factory implements Contract {
   constructor(readonly address: Address) {}
@@ -22,7 +22,6 @@ export class Factory implements Contract {
   static createFromAddress(address: Address) {
     return new Factory(address);
   }
-
   private storeSwapNext(src: SwapNext) {
     const nextCell = src.next ? beginCell().store(this.storeNext(src.next)).endCell() : null;
     return (b: Builder) => {
@@ -212,8 +211,8 @@ export class Factory implements Contract {
     // Compute the gas for the swap
     const swapGas =
       Gas.SWAP_GAS + // Swap gas in the first pool
-      (payload.next ? computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
-      computeForwardFees(NumTxs.Swap, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      (payload.next ? GasCalculator.computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
+      GasCalculator.computeForwardFees(NumTxs.Swap, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     switch (payload.assetIn.type) {
       case AssetType.TON: {
@@ -267,7 +266,7 @@ export class Factory implements Contract {
     const depositGas =
       Gas.DEPOSIT_GAS + // Deposit gas in the first pool
       (payload.next ? Gas.SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
-      computeForwardFees(NumTxs.Deposit, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      GasCalculator.computeForwardFees(NumTxs.Deposit, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
