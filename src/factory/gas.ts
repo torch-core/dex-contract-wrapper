@@ -2,6 +2,11 @@ import { SwapNext, WithdrawNext } from './type';
 import { Cell, toNano } from '@ton/core';
 import { GasCalculator } from './gas-calculator';
 
+export abstract class NumTxs {
+  static readonly Swap = 7n;
+  static readonly Deposit = 8n;
+}
+
 export abstract class Gas {
   static readonly JETTON_TRANSFER_GAS = toNano('0.05');
   static readonly DEPOSIT_GAS = toNano('0.2');
@@ -25,8 +30,12 @@ export const computeGasForSwapChain = (next: SwapNext | WithdrawNext | null): bi
   return Gas.DEPOSIT_OR_SWAP_NEXT_GAS;
 };
 
-export const computeForwardFees = (fulfillPayload?: Cell | null, rejectPayload?: Cell | null): bigint => {
+export const computeForwardFees = (
+  numTxs: bigint,
+  fulfillPayload?: Cell | null,
+  rejectPayload?: Cell | null,
+): bigint => {
   const fullfillPayloadFee = fulfillPayload ? GasCalculator.computeTotalSendingFees(fulfillPayload) : 0n;
   const rejectPayloadFee = rejectPayload ? GasCalculator.computeTotalSendingFees(rejectPayload) : 0n;
-  return fullfillPayloadFee > rejectPayloadFee ? fullfillPayloadFee : rejectPayloadFee;
+  return (fullfillPayloadFee > rejectPayloadFee ? fullfillPayloadFee : rejectPayloadFee) * numTxs;
 };

@@ -14,7 +14,7 @@ import {
 import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, WithdrawPayload } from './type';
 import { Pool } from '../pool';
 import { getVaultProof, packMinAmount } from './pack';
-import { computeGasForSwapChain, Gas, computeForwardFees } from './gas';
+import { computeGasForSwapChain, Gas, computeForwardFees, NumTxs } from './gas';
 
 export class Factory implements Contract {
   constructor(readonly address: Address) {}
@@ -213,7 +213,7 @@ export class Factory implements Contract {
     const swapGas =
       Gas.SWAP_GAS + // Swap gas in the first pool
       (payload.next ? computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
-      computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      computeForwardFees(NumTxs.Swap, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     switch (payload.assetIn.type) {
       case AssetType.TON: {
@@ -267,7 +267,7 @@ export class Factory implements Contract {
     const depositGas =
       Gas.DEPOSIT_GAS + // Deposit gas in the first pool
       (payload.next ? Gas.DEPOSIT_OR_SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
-      computeForwardFees(payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      computeForwardFees(NumTxs.Deposit, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
