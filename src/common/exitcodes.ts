@@ -46,6 +46,8 @@ export abstract class ExitCode {
         return 'Not deployer';
       case ExitCode.NotAdmin:
         return 'Not admin';
+      case ExitCode.InvalidAssetType:
+        return 'Invalid asset type';
       case ExitCode.NotSupportedAssetType:
         return 'Not supported asset type';
       case ExitCode.NotVault:
@@ -82,6 +84,8 @@ export abstract class ExitCode {
         return 'Same asset';
       case ExitCode.InvalidDepositSender:
         return 'Invalid deposit sender';
+      case ExitCode.NotSuitableD:
+        return 'Not suitable D';
       case ExitCode.InvalidLiquidity:
         return 'Invalid liquidity';
       case ExitCode.InvalidRampA:
@@ -111,9 +115,7 @@ export abstract class ExitCode {
       case ExitCode.WrongOp:
         return 'Undefined opcode';
       case ExitCode.DuplicateDeposit:
-        return 'Dulplicate deposit';
-      case ExitCode.NotSuitableD:
-        return 'Not suitable D';
+        return 'Duplicate deposit';
       case ExitCode.IncorrectDepositTarget:
         return 'Incorrect deposit target';
       default:
