@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.1.2
+
+### Patch Changes
+
+- 6680570: Fix the handling of the next operation in the Factory class.
+
 ## 0.1.1
 
 ### Patch Changes
