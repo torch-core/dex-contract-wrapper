@@ -210,13 +210,7 @@ export class Factory implements Contract {
     const vaultAddress = await this.getAddress(provider, getVaultProof(payload.assetIn));
 
     // Get counts of next operations
-    let nextDepth = 0n;
-    if (payload.next) {
-      nextDepth = countNextDepth(payload.next);
-      if (nextDepth > 1) {
-        throw new Error('Next operation is not supported');
-      }
-    }
+    const nextDepth = payload.next ? countNextDepth(payload.next) : 0n;
 
     // Compute the gas for the swap
     const swapGas =
