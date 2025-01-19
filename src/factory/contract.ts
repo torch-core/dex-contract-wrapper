@@ -266,7 +266,7 @@ export class Factory implements Contract {
     // Compute the gas for the deposit
     const depositGas =
       Gas.DEPOSIT_GAS + // Deposit gas in the first pool
-      (payload.next ? Gas.DEPOSIT_OR_SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
+      (payload.next ? Gas.SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
       computeForwardFees(NumTxs.Deposit, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
 
     // Create sendArgs for each deposit
