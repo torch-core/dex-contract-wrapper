@@ -118,8 +118,8 @@ export class Factory implements Contract {
     const baseCode = data.stack.readCell();
     const lpAccountCode = data.stack.readCell();
 
-    const vaultCodesSc = data.stack.readCell()?.beginParse();
-    const vaultCodes = vaultCodesSc?.loadDictDirect(Dictionary.Keys.BigUint(4), Dictionary.Values.Cell());
+    const vaultCodesSc = data.stack.readCell().beginParse();
+    const vaultCodes = vaultCodesSc.loadDictDirect(Dictionary.Keys.BigUint(4), Dictionary.Values.Cell());
 
     const signerKeyInt = data.stack.readBigNumber();
     const signerKey = Buffer.from(signerKeyInt.toString(16), 'hex');
