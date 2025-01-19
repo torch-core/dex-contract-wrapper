@@ -1,13 +1,11 @@
 import { Cell, toNano } from '@ton/core';
 import { computeMessageForwardFees, MsgPrices } from '@ton/ton';
-import { WithdrawNext } from './type';
-import { SwapNext } from './type';
 
 export abstract class NumTxs {
   // It takes 7 txs to complete a swap
   static readonly Swap = 7n;
-  // It takes 8 txs to complete a deposit
-  static readonly Deposit = 8n;
+  // It takes 9 txs to complete a deposit
+  static readonly Deposit = 9n;
 }
 
 export abstract class Gas {
@@ -15,7 +13,8 @@ export abstract class Gas {
   static readonly DEPOSIT_GAS = toNano('0.2');
   static readonly SWAP_GAS = toNano('0.18');
   static readonly WITHDRAW_GAS = toNano('0.4');
-  static readonly DEPOSI_OR_SWAP_NEXT_GAS = toNano('0.1'); // Deposit and swap next use the same gas
+  static readonly DEPOSIT_NEXT_GAS = toNano('0.1');
+  static readonly SWAP_NEXT_GAS = toNano('0.1');
   static readonly WITHDRAW_NEXT_GAS = toNano('0.35');
 }
 
@@ -37,16 +36,6 @@ export class GasCalculator {
     const { fees, remaining } = computeMessageForwardFees(this.config, msgBody);
     const actionFee = fees - remaining;
     return actionFee + fees;
-  }
-
-  static computeGasForSwapChain(next: SwapNext | WithdrawNext | null): bigint {
-    if (!next) return 0n;
-
-    if (next.type === 'swap' && next.next) {
-      return Gas.DEPOSI_OR_SWAP_NEXT_GAS + this.computeGasForSwapChain(next.next);
-    }
-
-    return Gas.DEPOSI_OR_SWAP_NEXT_GAS;
   }
 
   static computeForwardFees(numTxs: bigint, fulfillPayload?: Cell | null, rejectPayload?: Cell | null): bigint {

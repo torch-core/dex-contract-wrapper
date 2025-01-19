@@ -15,6 +15,7 @@ import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, Withd
 import { Pool } from '../pool';
 import { getVaultProof, packMinAmount } from './pack';
 import { Gas, GasCalculator, NumTxs } from './gas';
+import { countNextDepth } from './next';
 
 export class Factory implements Contract {
   constructor(readonly address: Address) {}
@@ -208,11 +209,24 @@ export class Factory implements Contract {
     // Get vault address
     const vaultAddress = await this.getAddress(provider, getVaultProof(payload.assetIn));
 
+    // Get counts of next operations
+    let nextDepth = 0n;
+    if (payload.next) {
+      nextDepth = countNextDepth(payload.next);
+      if (nextDepth > 1) {
+        throw new Error('Next operation is not supported');
+      }
+    }
+
     // Compute the gas for the swap
     const swapGas =
       Gas.SWAP_GAS + // Swap gas in the first pool
-      (payload.next ? GasCalculator.computeGasForSwapChain(payload.next) : 0n) + // Add gas for each next operation
-      GasCalculator.computeForwardFees(NumTxs.Swap, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      (payload.next ? Gas.SWAP_NEXT_GAS * nextDepth : 0n) + // Add gas for each next operation
+      GasCalculator.computeForwardFees(
+        NumTxs.Swap + nextDepth, // Swap transactions + next operations
+        payload.config?.fulfillPayload,
+        payload.config?.rejectPayload,
+      ); // Compute forward fees base on the size of the forward payload
 
     switch (payload.assetIn.type) {
       case AssetType.TON: {
@@ -262,11 +276,18 @@ export class Factory implements Contract {
     const firstPoolAssets = await firstPool.getAssets();
     payload.depositAmounts = normalize(originalDepositAmounts, firstPoolAssets);
 
+    // Get counts of next operations
+    const nextDepth = payload.next ? 1n : 0n;
+
     // Compute the gas for the deposit
     const depositGas =
       Gas.DEPOSIT_GAS + // Deposit gas in the first pool
-      (payload.next ? Gas.DEPOSI_OR_SWAP_NEXT_GAS : 0n) + // If there is a next operation (swap or deposit), add NEXT_GAS (0.05 TON) for the next operation
-      GasCalculator.computeForwardFees(NumTxs.Deposit, payload.config?.fulfillPayload, payload.config?.rejectPayload); // Compute forward fees base on the size of the forward payload
+      nextDepth * Gas.DEPOSIT_NEXT_GAS + // If there is a next operation (swap or deposit), add DEPOSIT_NEXT_GAS (0.1 TON) for the next operation
+      GasCalculator.computeForwardFees(
+        NumTxs.Deposit + nextDepth, // Deposit transactions + next operations
+        payload.config?.fulfillPayload,
+        payload.config?.rejectPayload,
+      ); // Compute forward fees base on the size of the forward payload
 
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
