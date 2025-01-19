@@ -4,7 +4,9 @@ import { WithdrawNext } from './type';
 import { SwapNext } from './type';
 
 export abstract class NumTxs {
+  // It takes 7 txs to complete a swap
   static readonly Swap = 7n;
+  // It takes 8 txs to complete a deposit
   static readonly Deposit = 8n;
 }
 
