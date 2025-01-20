@@ -172,7 +172,7 @@ type SingleWithdrawConfig = {
    * The minimum amount of the single asset expected to receive from the withdrawal.
    * Transactions that yield less than this amount will fail.
    */
-  minAmountOut?: Allocation | null;
+  minAmountOut?: bigint | null;
 };
 
 /**
@@ -189,7 +189,7 @@ type BalancedWithdrawConfig = {
    * Transactions that yield less than these amounts will fail.
    * Please ensure that minAmountOut is normalized according to the pool assets before passing it in.
    */
-  minAmountOuts?: Allocation[] | null;
+  minAmountOuts?: bigint[] | null;
 };
 
 /**
