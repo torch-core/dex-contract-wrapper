@@ -216,7 +216,7 @@ export class Factory implements Contract {
     // Compute the gas for the swap
     const swapGas =
       Gas.SWAP_GAS + // Swap gas in the first pool
-      (payload.next ? Gas.SWAP_NEXT_GAS * nextDepth : 0n) + // Add gas for each next operation
+      (payload.next ? Gas.SWAP_NEXT_GAS * (nextDepth - 1n) + Gas.WITHDRAW_NEXT_GAS : 0n) + // If swap has next, it will use WITHDRAW_NEXT_GAS to over-estimate the gas
       GasCalculator.computeForwardFees(
         NumTxs.Swap + nextDepth, // Swap transactions + next operations
         payload.config?.fulfillPayload,
