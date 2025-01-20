@@ -7,6 +7,6 @@ export abstract class Size {
   static readonly BaseLpIndex = 4;
   static readonly ContractType = 5;
   static readonly PoolType = 4;
-  static readonly NextType = 4;
+  static readonly NextType = 2;
   static readonly Signature = 64;
 }
