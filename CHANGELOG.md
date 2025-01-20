@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.1.4
+
+### Patch Changes
+
+- de6172a: Fixed an issue where depositPayload was missing the fulfillPayload and rejectPayload fields.
+
 ## 0.1.3
 
 ### Patch Changes
