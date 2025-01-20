@@ -1,5 +1,14 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.1.5
+
+### Patch Changes
+
+- 6eee25e: - Adjust the size of NextType.
+  - Update the gas estimation for SwapNext.
+  - Move the fields shared by withdrawConfig into WithdrawPayload.
+  - Use allocation only in scenarios that require sorting and normalization.
+
 ## 0.1.4
 
 ### Patch Changes
