@@ -277,8 +277,13 @@ export class Factory implements Contract {
 
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
-    for (let i = 0; i < payload.poolAllocations.length; i++) {
-      const { asset, value } = payload.poolAllocations[i];
+    const allAllocations =
+      payload.next && payload.next.type === 'deposit'
+        ? [...payload.poolAllocations, payload.next.metaAllocation]
+        : payload.poolAllocations;
+    for (let i = 0; i < allAllocations.length; i++) {
+      const { asset, value } = allAllocations[i];
+      if (value === 0n) continue;
       switch (asset.type) {
         case AssetType.TON: {
           const tonVaultAddress = await this.getAddress(provider, getVaultProof(asset));
