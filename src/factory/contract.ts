@@ -6,13 +6,11 @@ import {
   Asset,
   AssetType,
   coinsMarshaller,
-  normalize,
   SignedRate,
   storeCoinsNested,
   storeSortedAssetsNested,
 } from '@torch-finance/core';
 import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, WithdrawPayload } from './type';
-import { Pool } from '../pool';
 import { getVaultProof, packMinAmount } from './pack';
 import { Gas, GasCalculator, NumTxs } from './gas';
 import { countNextDepth } from './next';
@@ -38,8 +36,8 @@ export class Factory implements Contract {
     return (b: Builder) => {
       b.storeUint(NextType.Deposit, Size.NextType)
         .storeAddress(src.nextPoolAddress)
-        .storeCoins(src.metaAmount ?? 0)
-        .storeRef(src.metaAsset.toCell())
+        .storeCoins(src.metaAllocation.value)
+        .storeRef(src.metaAllocation.asset.toCell())
         .storeCoins(src.minLpAmount ?? 0)
         .endCell();
     };
@@ -110,7 +108,7 @@ export class Factory implements Contract {
 
   private storeDeposit(payload: DepositPayload) {
     // Prepare target cell for deposit in the pool
-    const targetCell = storeCoinsNested(payload.depositAmounts.map((alloc) => alloc.value));
+    const targetCell = storeCoinsNested(payload.poolAllocations.map((alloc) => alloc.value));
 
     // Prepare assets cell for deposit. Only when deposit one
     // There are three scenarios where only one asset will be wrapped for deposit:
@@ -118,18 +116,18 @@ export class Factory implements Contract {
     // 2. depositAmounts contains only one asset, there is a next, but the meta amount in next is 0.
     // 3. depositAmounts contains only one asset, there is a next, and the next type is swap.
     let assetsCell: Cell | null = null;
-    const isDepositOne = payload.depositAmounts.filter((alloc) => alloc.value > 0).length === 1;
+    const isDepositOne = payload.poolAllocations.filter((alloc) => alloc.value > 0).length === 1;
     if (
       isDepositOne &&
       (!payload.next ||
         (payload.next &&
-          (payload.next.type === 'swap' || (payload.next.type === 'deposit' && !payload.next?.metaAmount))))
+          (payload.next.type === 'swap' || (payload.next.type === 'deposit' && !payload.next?.metaAllocation.value))))
     ) {
       // Deposit only one asset
-      assetsCell = beginCell().storeRef(payload.depositAmounts[0].asset.toCell()).endCell();
+      assetsCell = beginCell().storeRef(payload.poolAllocations[0].asset.toCell()).endCell();
     } else {
       // Deposit multiple assets
-      assetsCell = storeSortedAssetsNested(payload.depositAmounts.map((alloc) => alloc.asset));
+      assetsCell = storeSortedAssetsNested(payload.poolAllocations.map((alloc) => alloc.asset));
     }
 
     // Prepare signed rate if pool needs it
@@ -264,12 +262,6 @@ export class Factory implements Contract {
     sender: Address,
     payload: DepositPayload,
   ): Promise<SenderArguments[]> {
-    // Normalized the original deposit amount (It will only normalize the assets that are in the first pool)
-    const { depositAmounts: originalDepositAmounts } = payload;
-    const firstPool = provider.open(Pool.createFromAddress(payload.poolAddress));
-    const firstPoolAssets = await firstPool.getAssets();
-    payload.depositAmounts = normalize(originalDepositAmounts, firstPoolAssets);
-
     // Get counts of next operations
     const nextDepth = payload.next ? 1n : 0n;
 
@@ -285,8 +277,13 @@ export class Factory implements Contract {
 
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
-    for (let i = 0; i < originalDepositAmounts.length; i++) {
-      const { asset, value } = originalDepositAmounts[i];
+    const allAllocations =
+      payload.next && payload.next.type === 'deposit'
+        ? [...payload.poolAllocations, payload.next.metaAllocation]
+        : payload.poolAllocations;
+    for (let i = 0; i < allAllocations.length; i++) {
+      const { asset, value } = allAllocations[i];
+      if (value === 0n) continue;
       switch (asset.type) {
         case AssetType.TON: {
           const tonVaultAddress = await this.getAddress(provider, getVaultProof(asset));

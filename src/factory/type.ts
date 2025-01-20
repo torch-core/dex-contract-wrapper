@@ -55,14 +55,11 @@ export type DepositPayload = {
   poolAddress: Address;
 
   /**
-   * The list of assets being deposited.
+   * The allocations for each asset in the pool.
+   * If you do not wish to deposit a certain asset, set its value to `0`.
+   * Make sure that poolAllocations is sorted and normalized.
    */
-  assets: Asset[];
-
-  /**
-   * The allocation of deposit amounts corresponding to each asset.
-   */
-  depositAmounts: Allocation[];
+  poolAllocations: Allocation[];
 
   /**
    * Optional configuration for the deposit transaction, including minimum LP tokens, recipient address, and more.
@@ -270,15 +267,10 @@ export type DepositNext = {
   nextPoolAddress: Address;
 
   /**
-   * The meta pool asset to be deposited into the next pool.
+   * The allocation for the meta asset in the next pool.
+   * If you do not wish to deposit meta asset, set its value to `0`.
    */
-  metaAsset: Asset;
-
-  /**
-   * The amount of the meta asset to be deposited into the next pool.
-   * If set to null, it will use the transaction output amount directly.
-   */
-  metaAmount?: bigint | null;
+  metaAllocation: Allocation;
 
   /**
    * The minimum amount of LP tokens expected to receive from the next deposit operation.
