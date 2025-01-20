@@ -189,7 +189,7 @@ type BalancedWithdrawConfig = {
    * Transactions that yield less than these amounts will fail.
    * Please ensure that minAmountOut is normalized according to the pool assets before passing it in.
    */
-  minAmountOuts?: bigint[] | null;
+  minAmountOuts?: Allocation[] | null;
 };
 
 /**

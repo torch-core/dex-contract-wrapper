@@ -1,5 +1,5 @@
 import { beginCell } from '@ton/core';
-import { Asset, storeCoinsNested } from '@torch-finance/core';
+import { Allocation, Asset, storeCoinsNested } from '@torch-finance/core';
 import { ContractType } from '../common';
 
 export const getVaultProof = (asset: Asset) => {
@@ -8,11 +8,11 @@ export const getVaultProof = (asset: Asset) => {
   );
 };
 
-export const packMinAmount = (minAmountOut: bigint[] | bigint) => {
+export const packMinAmount = (minAmountOut: Allocation[] | bigint) => {
   // withdraw balance in all assets
   if (Array.isArray(minAmountOut)) {
     // Please ensure that minAmountOut is normalized according to the pool assets before passing it in.
-    return storeCoinsNested(minAmountOut);
+    return storeCoinsNested(minAmountOut.map((alloc) => alloc.value));
   }
   // if only one asset is non-zero, it is the asset out
   return beginCell().storeCoins(minAmountOut).endCell();
