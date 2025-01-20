@@ -8,12 +8,12 @@ export const getVaultProof = (asset: Asset) => {
   );
 };
 
-export const packMinAmount = (minAmountOut: Allocation[] | Allocation) => {
+export const packMinAmount = (minAmountOut: Allocation[] | bigint) => {
   // withdraw balance in all assets
   if (Array.isArray(minAmountOut)) {
     // Please ensure that minAmountOut is normalized according to the pool assets before passing it in.
     return storeCoinsNested(minAmountOut.map((alloc) => alloc.value));
   }
   // if only one asset is non-zero, it is the asset out
-  return beginCell().storeCoins(minAmountOut.value).endCell();
+  return beginCell().storeCoins(minAmountOut).endCell();
 };

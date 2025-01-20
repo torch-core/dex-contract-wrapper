@@ -45,7 +45,14 @@ export class Factory implements Contract {
 
   private storeWithdrawNext(src: WithdrawNext) {
     const assetOut = src.config?.mode === 'single' ? src.config.assetOut.toCell() : null;
-    const minAmountOut = src.config?.minAmountOut ? packMinAmount(src.config.minAmountOut) : null;
+    let minAmountOut: Cell | null = null;
+    if (src.config?.mode === 'balanced' && src.config.minAmountOuts) {
+      minAmountOut = packMinAmount(src.config.minAmountOuts);
+    }
+
+    if (src.config?.mode === 'single' && src.config.minAmountOut) {
+      minAmountOut = packMinAmount(src.config.minAmountOut);
+    }
     return (b: Builder) => {
       b.storeUint(NextType.Withdraw, Size.NextType)
         .storeAddress(src.nextPoolAddress)
@@ -173,12 +180,19 @@ export class Factory implements Contract {
     }
 
     // Prepare signed rate if pool needs it
-    const signedRateCell = payload.config?.signedRate
-      ? beginCell().store(this.storeSignedRate(payload.config.signedRate)).endCell()
+    const signedRateCell = payload.signedRate
+      ? beginCell().store(this.storeSignedRate(payload.signedRate)).endCell()
       : null;
 
     // Prepare min amount out for the first pool if it exists
-    const minAmountOut = payload.config?.minAmountOut ? packMinAmount(payload.config.minAmountOut) : null;
+    let minAmountOut: Cell | null = null;
+    if (payload.config?.mode === 'balanced' && payload.config.minAmountOuts) {
+      minAmountOut = packMinAmount(payload.config.minAmountOuts);
+    }
+
+    if (payload.config?.mode === 'single' && payload.config.minAmountOut) {
+      minAmountOut = packMinAmount(payload.config.minAmountOut);
+    }
 
     // Prepare next operation if it exists (withdraw)
     const nextCell = payload.next ? beginCell().store(this.storeNext(payload.next)).endCell() : null;
@@ -189,7 +203,7 @@ export class Factory implements Contract {
         .storeAddress(payload.recipient)
         .storeMaybeRef(signedRateCell)
         .storeMaybeRef(assetOut)
-        .storeMaybeRef(beginCell().storeMaybeRef(minAmountOut).storeDict(payload.config?.extraPayload).endCell())
+        .storeMaybeRef(beginCell().storeMaybeRef(minAmountOut).storeDict(payload.extraPayload).endCell())
         .storeMaybeRef(nextCell)
         .endCell();
     };
@@ -216,7 +230,7 @@ export class Factory implements Contract {
     // Compute the gas for the swap
     const swapGas =
       Gas.SWAP_GAS + // Swap gas in the first pool
-      (payload.next ? Gas.SWAP_NEXT_GAS * nextDepth : 0n) + // Add gas for each next operation
+      (payload.next ? Gas.SWAP_NEXT_GAS * (nextDepth - 1n) + Gas.WITHDRAW_NEXT_GAS : 0n) + // If swap has next, it will use WITHDRAW_NEXT_GAS to over-estimate the gas
       GasCalculator.computeForwardFees(
         NumTxs.Swap + nextDepth, // Swap transactions + next operations
         payload.config?.fulfillPayload,
