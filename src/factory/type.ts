@@ -173,17 +173,6 @@ type SingleWithdrawConfig = {
    * Transactions that yield less than this amount will fail.
    */
   minAmountOut?: Allocation | null;
-
-  /**
-   * The signed relative price, used for price-sensitive single asset withdrawals.
-   * Ensure this value is securely generated and verified to prevent exploits.
-   */
-  signedRate?: SignedRate | null;
-
-  /**
-   * Reserved for future use. Currently unsupported extra payload.
-   */
-  extraPayload?: Dictionary<bigint, Cell> | null;
 };
 
 /**
@@ -200,18 +189,7 @@ type BalancedWithdrawConfig = {
    * Transactions that yield less than these amounts will fail.
    * Please ensure that minAmountOut is normalized according to the pool assets before passing it in.
    */
-  minAmountOut?: Allocation[] | null;
-
-  /**
-   * The signed relative price, used for price-sensitive balanced withdrawals.
-   * Ensure this value is securely generated and verified to prevent exploits.
-   */
-  signedRate?: SignedRate | null;
-
-  /**
-   * Reserved for future use. Currently unsupported extra payload.
-   */
-  extraPayload?: Dictionary<bigint, Cell> | null;
+  minAmountOuts?: Allocation[] | null;
 };
 
 /**
@@ -238,6 +216,17 @@ export type WithdrawPayload = {
    * Defaults to the initiator of the withdrawal transaction if set to null.
    */
   recipient?: Address | null;
+
+  /**
+   * The signed relative price, used for price-sensitive balanced withdrawals.
+   * Ensure this value is securely generated and verified to prevent exploits.
+   */
+  signedRate?: SignedRate | null;
+
+  /**
+   * Reserved for future use. Currently unsupported extra payload.
+   */
+  extraPayload?: Dictionary<bigint, Cell> | null;
 
   /**
    * Optional configuration for the withdrawal transaction, defining the mode and other parameters.
