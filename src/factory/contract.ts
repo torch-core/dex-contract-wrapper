@@ -141,6 +141,9 @@ export class Factory implements Contract {
           .storeCoins(payload.config.minLpAmount ?? 0)
           .storeAddress(payload.config.recipient)
           .storeMaybeRef(signedRateCell)
+          .storeMaybeRef(payload.config.fulfillPayload)
+          .storeMaybeRef(payload.config.rejectPayload)
+          .storeDict(payload.config.extraPayload)
           .endCell()
       : null;
 
