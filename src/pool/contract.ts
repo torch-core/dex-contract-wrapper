@@ -4,12 +4,16 @@ import { Allocation, Asset, parseAssetsFromNestedCell, storeCoinsNested } from '
 import { parsePool } from './storage';
 import {
   PoolData,
+  SimulateSwapExactInResult,
+  SimualateSwapExactOutResult,
   SimulateDepositParams,
-  SimulateSwapParams,
+  SimulateSwapExactInParams,
+  SimulateSwapExactOutParams,
   SimulateWithdrawParams,
   SimulateWithdrawResult,
-  SimulatorDepositResult,
-  SimulatorSwapResult,
+  SimulateDepositResult,
+  SimulateSwapParams,
+  SimulateSwapResult,
 } from './types';
 
 export class Pool implements Contract {
@@ -63,7 +67,7 @@ export class Pool implements Contract {
   }
 
   // Simulate
-  async simulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulatorDepositResult> {
+  async simulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulateDepositResult> {
     const simulateDepositResult = await provider.get('simulate_deposit', [
       {
         type: 'cell',
@@ -87,7 +91,17 @@ export class Pool implements Contract {
     return { lpTokenOut, virtualPriceBefore, virtualPriceAfter, lpTotalSupply };
   }
 
-  async getSimulateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulatorSwapResult> {
+  async getSimualateSwap(
+    provider: ContractProvider,
+    params: SimulateSwapExactInParams,
+  ): Promise<SimulateSwapExactInResult>;
+
+  async getSimualateSwap(
+    provider: ContractProvider,
+    params: SimulateSwapExactOutParams,
+  ): Promise<SimualateSwapExactOutResult>;
+
+  async getSimualateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulateSwapResult> {
     const simulateSwapResult = await provider.get('get_simulate_swap', [
       {
         type: 'cell',
@@ -99,7 +113,7 @@ export class Pool implements Contract {
       },
       {
         type: 'int',
-        value: params.amount,
+        value: params.mode === 'ExactIn' ? params.amountIn : params.amountOut,
       },
       params.rates
         ? {
@@ -111,11 +125,24 @@ export class Pool implements Contract {
           },
     ]);
 
-    const amountOut = simulateSwapResult.stack.readBigNumber();
+    const amount = simulateSwapResult.stack.readBigNumber();
     const virtualPriceBefore = simulateSwapResult.stack.readBigNumber();
     const virtualPriceAfter = simulateSwapResult.stack.readBigNumber();
+
+    // ExactIn
+    if (params.mode === 'ExactIn') {
+      return {
+        mode: 'ExactIn',
+        amountOut: amount,
+        virtualPriceBefore,
+        virtualPriceAfter,
+      };
+    }
+
+    // ExactOut
     return {
-      amountOut,
+      mode: 'ExactOut',
+      amountIn: amount,
       virtualPriceBefore,
       virtualPriceAfter,
     };
