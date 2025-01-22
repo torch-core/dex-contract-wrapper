@@ -5,7 +5,7 @@ import { parsePool } from './storage';
 import {
   PoolData,
   SimulateSwapExactInResult,
-  SimualateSwapExactOutResult,
+  SimulateSwapExactOutResult,
   SimulateDepositParams,
   SimulateSwapExactInParams,
   SimulateSwapExactOutParams,
@@ -91,17 +91,17 @@ export class Pool implements Contract {
     return { lpTokenOut, virtualPriceBefore, virtualPriceAfter, lpTotalSupply };
   }
 
-  async getSimualateSwap(
+  async getSimulateSwap(
     provider: ContractProvider,
     params: SimulateSwapExactInParams,
   ): Promise<SimulateSwapExactInResult>;
 
-  async getSimualateSwap(
+  async getSimulateSwap(
     provider: ContractProvider,
     params: SimulateSwapExactOutParams,
-  ): Promise<SimualateSwapExactOutResult>;
+  ): Promise<SimulateSwapExactOutResult>;
 
-  async getSimualateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulateSwapResult> {
+  async getSimulateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulateSwapResult> {
     const simulateSwapResult = await provider.get('get_simulate_swap', [
       {
         type: 'cell',

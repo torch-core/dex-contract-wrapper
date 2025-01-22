@@ -80,7 +80,7 @@ export type SimulateSwapExactInResult = {
 /**
  * Result of a simulated swap with exact output amount.
  */
-export type SimualateSwapExactOutResult = {
+export type SimulateSwapExactOutResult = {
   /** Mode of the swap operation (exactOut) */
   mode: 'ExactOut';
   /** Amount of asset sent */
@@ -94,7 +94,7 @@ export type SimualateSwapExactOutResult = {
 /**
  * Union type for simulator swap results.
  */
-export type SimulateSwapResult = SimulateSwapExactInResult | SimualateSwapExactOutResult;
+export type SimulateSwapResult = SimulateSwapExactInResult | SimulateSwapExactOutResult;
 
 /**
  * Parameters for simulating a withdrawal from a pool.
