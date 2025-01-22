@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.1
+
+### Patch Changes
+
+- 1e6dd0c: Fixed typos in type and method names: changed 'Simualate' to 'Simulate' in SimulateSwapExactOutResult and related methods
+
 ## 0.2.0
 
 ### Minor Changes
