@@ -44,13 +44,13 @@ export class Factory implements Contract {
   }
 
   private storeWithdrawNext(src: WithdrawNext) {
-    const assetOut = src.config?.mode === 'single' ? src.config.assetOut.toCell() : null;
+    const assetOut = src.config?.mode === 'Single' ? src.config.assetOut.toCell() : null;
     let minAmountOut: Cell | null = null;
-    if (src.config?.mode === 'balanced' && src.config.minAmountOuts) {
+    if (src.config?.mode === 'Balanced' && src.config.minAmountOuts) {
       minAmountOut = packMinAmount(src.config.minAmountOuts);
     }
 
-    if (src.config?.mode === 'single' && src.config.minAmountOut) {
+    if (src.config?.mode === 'Single' && src.config.minAmountOut) {
       minAmountOut = packMinAmount(src.config.minAmountOut);
     }
     return (b: Builder) => {
@@ -64,13 +64,13 @@ export class Factory implements Contract {
 
   private storeNext(src: SwapNext | DepositNext | WithdrawNext) {
     return (b: Builder) => {
-      if (src.type === 'swap') {
+      if (src.type === 'Swap') {
         return b.store(this.storeSwapNext(src));
       }
-      if (src.type === 'deposit') {
+      if (src.type === 'Deposit') {
         return b.store(this.storeDepositNext(src));
       }
-      if (src.type === 'withdraw') {
+      if (src.type === 'Withdraw') {
         return b.store(this.storeWithdrawNext(src));
       }
     };
@@ -128,7 +128,7 @@ export class Factory implements Contract {
       isDepositOne &&
       (!payload.next ||
         (payload.next &&
-          (payload.next.type === 'swap' || (payload.next.type === 'deposit' && !payload.next?.metaAllocation.value))))
+          (payload.next.type === 'Swap' || (payload.next.type === 'Deposit' && !payload.next?.metaAllocation.value))))
     ) {
       // Deposit only one asset
       assetsCell = beginCell().storeRef(payload.poolAllocations[0].asset.toCell()).endCell();
@@ -175,7 +175,7 @@ export class Factory implements Contract {
     let assetOut: Cell | null = null;
 
     // If it is single withdraw mode, set assetOut
-    if (payload.config?.mode === 'single') {
+    if (payload.config?.mode === 'Single') {
       assetOut = payload.config.assetOut.toCell();
     }
 
@@ -186,11 +186,11 @@ export class Factory implements Contract {
 
     // Prepare min amount out for the first pool if it exists
     let minAmountOut: Cell | null = null;
-    if (payload.config?.mode === 'balanced' && payload.config.minAmountOuts) {
+    if (payload.config?.mode === 'Balanced' && payload.config.minAmountOuts) {
       minAmountOut = packMinAmount(payload.config.minAmountOuts);
     }
 
-    if (payload.config?.mode === 'single' && payload.config.minAmountOut) {
+    if (payload.config?.mode === 'Single' && payload.config.minAmountOut) {
       minAmountOut = packMinAmount(payload.config.minAmountOut);
     }
 
@@ -295,7 +295,7 @@ export class Factory implements Contract {
     // Create sendArgs for each deposit
     const senderArgs: SenderArguments[] = [];
     const allAllocations =
-      payload.next && payload.next.type === 'deposit'
+      payload.next && payload.next.type === 'Deposit'
         ? [...payload.poolAllocations, payload.next.metaAllocation]
         : payload.poolAllocations;
     for (let i = 0; i < allAllocations.length; i++) {
