@@ -159,9 +159,9 @@ export type SwapPayload = {
  */
 type SingleWithdrawConfig = {
   /**
-   * The withdrawal mode, fixed to 'single' for single asset withdrawals.
+   * The withdrawal mode, fixed to 'Single' for single asset withdrawals.
    */
-  mode: 'single';
+  mode: 'Single';
 
   /**
    * The asset expected to be received from the withdrawal. (only return one asset)
@@ -180,9 +180,9 @@ type SingleWithdrawConfig = {
  */
 type BalancedWithdrawConfig = {
   /**
-   * The withdrawal mode, fixed to 'balanced' for proportional withdrawals across all assets in the pool.
+   * The withdrawal mode, fixed to 'Balanced' for proportional withdrawals across all assets in the pool.
    */
-  mode: 'balanced';
+  mode: 'Balanced';
 
   /**
    * The minimum amounts of each asset expected to receive from the withdrawal.
@@ -246,9 +246,9 @@ export type WithdrawPayload = {
  */
 export type DepositNext = {
   /**
-   * The type of the next operation, fixed to 'deposit'.
+   * The type of the next operation, fixed to 'Deposit'.
    */
-  type: 'deposit';
+  type: 'Deposit';
 
   /**
    * The address of the next pool where the deposit will occur.
@@ -273,9 +273,9 @@ export type DepositNext = {
  */
 export type SwapNext = {
   /**
-   * The type of the next operation, fixed to 'swap'.
+   * The type of the next operation, fixed to 'Swap'.
    */
-  type: 'swap';
+  type: 'Swap';
 
   /**
    * The address of the next pool where the swap will occur.
@@ -304,9 +304,9 @@ export type SwapNext = {
  */
 export type WithdrawNext = {
   /**
-   * The type of the next operation, fixed to 'withdraw'.
+   * The type of the next operation, fixed to 'Withdraw'.
    */
-  type: 'withdraw';
+  type: 'Withdraw';
 
   /**
    * The address of the next pool where the withdrawal will occur.
