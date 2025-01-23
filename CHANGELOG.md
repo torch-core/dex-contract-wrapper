@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.2
+
+### Patch Changes
+
+- 877e06a: Refactor params type
+
 ## 0.2.1
 
 ### Patch Changes
