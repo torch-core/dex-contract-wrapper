@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.3
+
+### Patch Changes
+
+- 7e884c3: Parallel request for jetton wallet in deposit payload
+
 ## 0.2.2
 
 ### Patch Changes
