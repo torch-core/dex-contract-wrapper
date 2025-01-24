@@ -11,7 +11,7 @@ import {
   storeSortedAssetsNested,
 } from '@torch-finance/core';
 import { DepositNext, DepositPayload, SwapNext, SwapPayload, WithdrawNext, WithdrawPayload } from './type';
-import { getVaultProof, packMinAmount } from './pack';
+import { getVaultAddress, packMinAmount } from './pack';
 import { Gas, GasCalculator, NumTxs } from './gas';
 import { countNextDepth } from './next';
 
@@ -222,7 +222,7 @@ export class Factory implements Contract {
 
   async getSwapPayload(provider: ContractProvider, sender: Address, payload: SwapPayload): Promise<SenderArguments> {
     // Get vault address
-    const vaultAddress = await this.getAddress(provider, getVaultProof(payload.assetIn));
+    const vaultAddress = getVaultAddress(this.address, payload.assetIn);
 
     // Get counts of next operations
     const nextDepth = payload.next ? countNextDepth(payload.next) : 0n;
@@ -293,18 +293,17 @@ export class Factory implements Contract {
       ); // Compute forward fees base on the size of the forward payload
 
     // Create sendArgs for each deposit
-    const senderArgs: SenderArguments[] = [];
     const allAllocations =
       payload.next && payload.next.type === 'Deposit'
         ? [...payload.poolAllocations, payload.next.metaAllocation]
         : payload.poolAllocations;
-    for (let i = 0; i < allAllocations.length; i++) {
-      const { asset, value } = allAllocations[i];
-      if (value === 0n) continue;
+
+    const senderArgsPromises = allAllocations.map(async ({ asset, value }) => {
+      if (value === 0n) return null;
       switch (asset.type) {
         case AssetType.TON: {
-          const tonVaultAddress = await this.getAddress(provider, getVaultProof(asset));
-          senderArgs.push({
+          const tonVaultAddress = getVaultAddress(this.address, asset);
+          return {
             to: tonVaultAddress,
             value: value + depositGas,
             body: beginCell()
@@ -313,15 +312,14 @@ export class Factory implements Contract {
               .storeCoins(value) // Deposit TON amount
               .storeRef(beginCell().store(this.storeDeposit(payload)).endCell())
               .endCell(),
-          });
-          break;
+          };
         }
         case AssetType.JETTON: {
-          const jettonVault = await this.getAddress(provider, getVaultProof(asset));
+          const jettonVault = getVaultAddress(this.address, asset);
           const jettonMaster = provider.open(JettonMaster.create(asset.jettonMaster as Address));
           const senderJettonWallet = await jettonMaster.getWalletAddress(sender);
           const forwardPayload = beginCell().store(this.storeDeposit(payload)).endCell();
-          senderArgs.push({
+          return {
             to: senderJettonWallet,
             value: depositGas + Gas.JETTON_TRANSFER_GAS,
             body: beginCell()
@@ -334,14 +332,15 @@ export class Factory implements Contract {
               .storeCoins(depositGas) // Forward TON
               .storeMaybeRef(forwardPayload)
               .endCell(),
-          });
-          break;
+          };
         }
         case AssetType.EXTRA_CURRENCY:
           // pack extra currency asset
           throw new Error('Extra currency is not supported');
       }
-    }
+    });
+
+    const senderArgs = (await Promise.all(senderArgsPromises)).filter((arg) => arg !== null);
     return senderArgs;
   }
 
@@ -352,7 +351,7 @@ export class Factory implements Contract {
   ): Promise<SenderArguments> {
     // Get lp vault address
     const lpAsset = Asset.jetton(payload.poolAddress);
-    const lpVaultAddress = await this.getAddress(provider, getVaultProof(lpAsset));
+    const lpVaultAddress = getVaultAddress(this.address, lpAsset);
 
     // Compute the gas for the withdraw
     const withdrawGas = Gas.WITHDRAW_GAS + (payload.next ? Gas.WITHDRAW_NEXT_GAS : 0n);
