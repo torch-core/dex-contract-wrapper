@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.4
+
+### Patch Changes
+
+- 9cc6d68: Add get-method tests for all contracts
+
 ## 0.2.3
 
 ### Patch Changes
