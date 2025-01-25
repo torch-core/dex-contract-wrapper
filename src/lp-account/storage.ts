@@ -7,7 +7,9 @@ export type LpAccountData = {
   queryId: bigint;
   providerAddress: Address;
   poolAddress: Address;
+  metaAsset: Asset;
   metaAmount: bigint;
+  metaBalance: bigint;
   assets: Asset[];
   currentBalances: Allocation[];
   targetBalances: Allocation[];

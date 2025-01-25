@@ -4,11 +4,7 @@ import { Allocation, Asset, parseAssetsFromNestedCell, storeCoinsNested } from '
 import { parsePool } from './storage';
 import {
   PoolData,
-  SimulateSwapExactInResult,
-  SimulateSwapExactOutResult,
   SimulateDepositParams,
-  SimulateSwapExactInParams,
-  SimulateSwapExactOutParams,
   SimulateWithdrawParams,
   SimulateWithdrawResult,
   SimulateDepositResult,
@@ -67,8 +63,8 @@ export class Pool implements Contract {
   }
 
   // Simulate
-  async simulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulateDepositResult> {
-    const simulateDepositResult = await provider.get('simulate_deposit', [
+  async getSimulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulateDepositResult> {
+    const simulateDepositResult = await provider.get('get_simulate_deposit', [
       {
         type: 'cell',
         cell: storeCoinsNested(params.depositAmounts.map((amount) => amount.value)),
@@ -91,18 +87,9 @@ export class Pool implements Contract {
     return { lpTokenOut, virtualPriceBefore, virtualPriceAfter, lpTotalSupply };
   }
 
-  async getSimulateSwap(
-    provider: ContractProvider,
-    params: SimulateSwapExactInParams,
-  ): Promise<SimulateSwapExactInResult>;
-
-  async getSimulateSwap(
-    provider: ContractProvider,
-    params: SimulateSwapExactOutParams,
-  ): Promise<SimulateSwapExactOutResult>;
-
   async getSimulateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulateSwapResult> {
-    const simulateSwapResult = await provider.get('get_simulate_swap', [
+    const isExactIn = params.mode === 'ExactIn';
+    const simulateSwapResult = await provider.get(isExactIn ? 'get_simulate_swap' : 'get_simulate_swap_exact_out', [
       {
         type: 'cell',
         cell: params.assetIn.toCell(),
@@ -113,7 +100,7 @@ export class Pool implements Contract {
       },
       {
         type: 'int',
-        value: params.mode === 'ExactIn' ? params.amountIn : params.amountOut,
+        value: isExactIn ? params.amountIn : params.amountOut,
       },
       params.rates
         ? {
