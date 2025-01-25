@@ -349,7 +349,7 @@ describe('Wrapper Testcases', () => {
 
   describe('Lp Account get-methods testcases', () => {
     it('should call getLpAccountData() successfully', async () => {
-      const lpAccountAddress = Address.parse('kQD4iRK9EoKIxaOeZOsR9YrJaPEdapCOxPiEXIRGz-il83ur');
+      const lpAccountAddress = Address.parse('0QCD8mAs2cPvcRiXVAhj6bm8nsEiwlqKqfv8mejxLNYZHfvq');
       const lpAccount = client.open(LpAccount.createFromAddress(lpAccountAddress));
       const lpAccountData = await lpAccount.getLpAccountData();
       expect(lpAccountData).toBeDefined();
