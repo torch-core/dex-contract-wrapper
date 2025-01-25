@@ -311,6 +311,23 @@ describe('Wrapper Testcases', () => {
       expect(simulateDepositResult.virtualPriceAfter).toBeDefined();
       expect(simulateDepositResult.lpTotalSupply).toBeDefined();
     });
+    it('should invoke simulateSwap() with ExactIn successfully', async () => {
+      const simulateSwapResult = await triTONPool.getSimulateSwap({
+        mode: 'ExactIn',
+        assetIn: tonAsset,
+        assetOut: tsTONAsset,
+        amountIn: 1000000000000000000n,
+        rates: triTONPoolRate,
+      });
+      if (simulateSwapResult.mode !== 'ExactIn') {
+        throw new Error('simulateSwapResult.mode is not ExactIn');
+      }
+      expect(simulateSwapResult).toBeDefined();
+      expect(simulateSwapResult.mode).toBe('ExactIn');
+      expect(simulateSwapResult.amountOut).toBeDefined();
+      expect(simulateSwapResult.virtualPriceBefore).toBeDefined();
+      expect(simulateSwapResult.virtualPriceAfter).toBeDefined();
+    });
 
     it('should call simulateSwap() with ExactOut successfully', async () => {
       const simulateSwapResult = await triTONPool.getSimulateSwap({
