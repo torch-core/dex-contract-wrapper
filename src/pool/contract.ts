@@ -67,8 +67,8 @@ export class Pool implements Contract {
   }
 
   // Simulate
-  async simulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulateDepositResult> {
-    const simulateDepositResult = await provider.get('simulate_deposit', [
+  async getSimulateDeposit(provider: ContractProvider, params: SimulateDepositParams): Promise<SimulateDepositResult> {
+    const simulateDepositResult = await provider.get('get_simulate_deposit', [
       {
         type: 'cell',
         cell: storeCoinsNested(params.depositAmounts.map((amount) => amount.value)),

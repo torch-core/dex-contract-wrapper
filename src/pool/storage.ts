@@ -38,7 +38,7 @@ export function parsePool(sc: Slice): PoolData {
     lpTotalSupply: basicInfoSc.loadCoins(),
     lpWalletCode: basicInfoSc.loadRef(),
     decimals: parseCoinsFromNestedCell(basicInfoSc.loadRef()).map((item, index) => {
-      return new Allocation({ asset: assets[index], value: 18n - item });
+      return new Allocation({ asset: assets[index], value: 10n ** 18n / item });
     }),
     plugins: basicInfoSc.loadDict(Dictionary.Keys.BigUint(4), Dictionary.Values.Cell()),
   };

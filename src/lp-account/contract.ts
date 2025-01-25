@@ -1,5 +1,5 @@
 import { Address, Contract, ContractProvider } from '@ton/core';
-import { Allocation, parseAssetsFromNestedCell, parseCoinsFromNestedCell } from '@torch-finance/core';
+import { Allocation, Asset, parseAssetsFromNestedCell, parseCoinsFromNestedCell } from '@torch-finance/core';
 import { LpAccountData } from './storage';
 
 export class LpAccount implements Contract {
@@ -16,7 +16,9 @@ export class LpAccount implements Contract {
     const queryId = res.stack.readBigNumber();
     const providerAddress = res.stack.readAddress();
     const poolAddress = res.stack.readAddress();
+    const metaAsset = Asset.fromCell(res.stack.readCell());
     const metaAmount = res.stack.readBigNumber();
+    const metaBalance = res.stack.readBigNumber();
     const assets = parseAssetsFromNestedCell(res.stack.readCell());
     const currentBalancesCell = parseCoinsFromNestedCell(res.stack.readCell());
     const targetBalancesCell = parseCoinsFromNestedCell(res.stack.readCell());
@@ -35,7 +37,9 @@ export class LpAccount implements Contract {
       queryId,
       providerAddress,
       poolAddress,
+      metaAsset,
       metaAmount,
+      metaBalance,
       assets,
       currentBalances,
       targetBalances,
