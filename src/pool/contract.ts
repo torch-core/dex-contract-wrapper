@@ -4,11 +4,7 @@ import { Allocation, Asset, parseAssetsFromNestedCell, storeCoinsNested } from '
 import { parsePool } from './storage';
 import {
   PoolData,
-  SimulateSwapExactInResult,
-  SimulateSwapExactOutResult,
   SimulateDepositParams,
-  SimulateSwapExactInParams,
-  SimulateSwapExactOutParams,
   SimulateWithdrawParams,
   SimulateWithdrawResult,
   SimulateDepositResult,
@@ -90,16 +86,6 @@ export class Pool implements Contract {
 
     return { lpTokenOut, virtualPriceBefore, virtualPriceAfter, lpTotalSupply };
   }
-
-  async getSimulateSwap(
-    provider: ContractProvider,
-    params: SimulateSwapExactInParams,
-  ): Promise<SimulateSwapExactInResult>;
-
-  async getSimulateSwap(
-    provider: ContractProvider,
-    params: SimulateSwapExactOutParams,
-  ): Promise<SimulateSwapExactOutResult>;
 
   async getSimulateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulateSwapResult> {
     const simulateSwapResult = await provider.get('get_simulate_swap', [
