@@ -1,4 +1,4 @@
-import { Address, OpenedContract } from '@ton/core';
+import { Address, OpenedContract, toNano } from '@ton/core';
 import { TonClient4 } from '@ton/ton';
 import { Pool } from '../src/pool/contract';
 import { Factory } from '../src/factory/contract';
@@ -334,7 +334,7 @@ describe('Wrapper Testcases', () => {
         mode: 'ExactOut',
         assetIn: tonAsset,
         assetOut: tsTONAsset,
-        amountOut: 1000000000000000000n,
+        amountOut: toNano(1),
         rates: triTONPoolRate,
       });
       if (simulateSwapResult.mode != 'ExactOut') {

@@ -88,7 +88,8 @@ export class Pool implements Contract {
   }
 
   async getSimulateSwap(provider: ContractProvider, params: SimulateSwapParams): Promise<SimulateSwapResult> {
-    const simulateSwapResult = await provider.get('get_simulate_swap', [
+    const isExactIn = params.mode === 'ExactIn';
+    const simulateSwapResult = await provider.get(isExactIn ? 'get_simulate_swap' : 'get_simulate_swap_exact_out', [
       {
         type: 'cell',
         cell: params.assetIn.toCell(),
@@ -99,7 +100,7 @@ export class Pool implements Contract {
       },
       {
         type: 'int',
-        value: params.mode === 'ExactIn' ? params.amountIn : params.amountOut,
+        value: isExactIn ? params.amountIn : params.amountOut,
       },
       params.rates
         ? {
