@@ -10,6 +10,7 @@ export abstract class Size {
   static readonly ContractType = 5;
   static readonly PoolType = 4;
   static readonly NextType = 2;
+  static readonly AssetType = 4;
   static readonly Signature = 64;
   static readonly Proof = 256;
 }

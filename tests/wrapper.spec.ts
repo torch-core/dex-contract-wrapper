@@ -1,11 +1,13 @@
 import { Address, OpenedContract, toNano } from '@ton/core';
-import { TonClient4 } from '@ton/ton';
+import { JettonMaster, TonClient4 } from '@ton/ton';
 import { Pool } from '../src/pool/contract';
 import { Factory } from '../src/factory/contract';
 import { LpAccount } from '../src/lp-account/contract';
 import { Vault } from '../src/vault/contract';
 import { DepositPayload, SwapPayload, WithdrawPayload } from '../src/factory/type';
-import { Allocation, Asset } from '@torch-finance/core';
+import { Allocation, Asset, AssetType } from '@torch-finance/core';
+import { ContractType } from '../src/common';
+import { JettonVaultData } from '../src/vault/storage';
 describe('Wrapper Testcases', () => {
   const endpoint = 'https://testnet-v4.tonhubapi.com';
   const client = new TonClient4({ endpoint });
@@ -23,10 +25,11 @@ describe('Wrapper Testcases', () => {
   const TRI_USD_POOL_ADDRESS = Address.parse('EQCP0zt6jVBBQrfuVQv2mkGxTx644BY0givW2BskBkJ7oQoN');
   const QUA_USD_POOL_ADDRESS = Address.parse('EQDNrykzaG7kEzmqa0H7nRRudU8EtzDSzYVQ8QEPslOgwDG8');
 
-  const H_TONAsset = Asset.jetton('EQDInlQkBcha9-KPGDR-eWi5VGhYPXO5s04amtzZ07s0Kzuu');
-  const jettonVaultAddress = Address.parse('EQDruot_WmgJfqy3sz6VwjM5h48eioAblY_tL_j_ZuNcj6nU');
-  const tonVaultAddress = Address.parse('EQDB8wYs5U_alBNFPpR9UpI8wQNGhAEJmgrR8kOjSX50gOlH');
-  const senderAddress = Address.parse('0QBtvbUwvUMHWiYt85cqAjtMSTOoDCufuBEhh7m6czZTn0wF');
+  const H_TON_ASSET = Asset.jetton('EQDInlQkBcha9-KPGDR-eWi5VGhYPXO5s04amtzZ07s0Kzuu');
+  const H_TON_MASTER = Address.parse('EQDInlQkBcha9-KPGDR-eWi5VGhYPXO5s04amtzZ07s0Kzuu');
+  const H_TON_VAULT_ADDRESS = Address.parse('EQDruot_WmgJfqy3sz6VwjM5h48eioAblY_tL_j_ZuNcj6nU');
+  const TON_VAULT_ADDRESS = Address.parse('EQDB8wYs5U_alBNFPpR9UpI8wQNGhAEJmgrR8kOjSX50gOlH');
+  const SENDER_ADDRESS = Address.parse('0QBtvbUwvUMHWiYt85cqAjtMSTOoDCufuBEhh7m6czZTn0wF');
 
   const triTONPoolRate: Allocation[] = Allocation.createAllocations([
     { asset: TON_ASSET, value: 10n ** 27n },
@@ -35,7 +38,7 @@ describe('Wrapper Testcases', () => {
   ]).sort((a, b) => a.asset.compare(b.asset));
 
   const quaTONPoolRate: Allocation[] = Allocation.createAllocations([
-    { asset: H_TONAsset, value: 10n ** 27n },
+    { asset: H_TON_ASSET, value: 10n ** 27n },
     { asset: TRI_TON_ASSET, value: 10n ** 18n },
   ]).sort((a, b) => a.asset.compare(b.asset));
 
@@ -73,7 +76,7 @@ describe('Wrapper Testcases', () => {
           { asset: TS_TON_ASSET, value: 1000000000000000000n },
         ]),
       };
-      const payload = await factory.getDepositPayload(senderAddress, depositParams);
+      const payload = await factory.getDepositPayload(SENDER_ADDRESS, depositParams);
       expect(payload).toBeDefined();
     });
 
@@ -91,7 +94,7 @@ describe('Wrapper Testcases', () => {
           metaAllocation: new Allocation({ asset: TON_ASSET, value: 1000000000000000000n }),
         },
       };
-      const payload = await factory.getDepositPayload(senderAddress, depositParams);
+      const payload = await factory.getDepositPayload(SENDER_ADDRESS, depositParams);
       expect(payload).toBeDefined();
     });
 
@@ -109,7 +112,7 @@ describe('Wrapper Testcases', () => {
           assetOut: TS_TON_ASSET,
         },
       };
-      const payload = await factory.getDepositPayload(senderAddress, depositParams);
+      const payload = await factory.getDepositPayload(SENDER_ADDRESS, depositParams);
       expect(payload).toBeDefined();
     });
 
@@ -121,7 +124,7 @@ describe('Wrapper Testcases', () => {
         assetOut: TS_TON_ASSET,
         amountIn: 1000000000000000000n,
       };
-      const payload = await factory.getSwapPayload(senderAddress, swapParams);
+      const payload = await factory.getSwapPayload(SENDER_ADDRESS, swapParams);
       expect(payload).toBeDefined();
     });
 
@@ -141,7 +144,7 @@ describe('Wrapper Testcases', () => {
           },
         },
       };
-      const payload = await factory.getSwapPayload(senderAddress, swapParams);
+      const payload = await factory.getSwapPayload(SENDER_ADDRESS, swapParams);
       expect(payload).toBeDefined();
     });
 
@@ -160,7 +163,7 @@ describe('Wrapper Testcases', () => {
           },
         },
       };
-      const payload = await factory.getSwapPayload(senderAddress, swapParams);
+      const payload = await factory.getSwapPayload(SENDER_ADDRESS, swapParams);
       expect(payload).toBeDefined();
     });
 
@@ -173,7 +176,7 @@ describe('Wrapper Testcases', () => {
           mode: 'Balanced',
         },
       };
-      const payload = await factory.getWithdrawPayload(senderAddress, withdrawParams);
+      const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
       expect(payload).toBeDefined();
     });
 
@@ -193,7 +196,7 @@ describe('Wrapper Testcases', () => {
           },
         },
       };
-      const payload = await factory.getWithdrawPayload(senderAddress, withdrawParams);
+      const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
       expect(payload).toBeDefined();
     });
 
@@ -214,7 +217,7 @@ describe('Wrapper Testcases', () => {
           },
         },
       };
-      const payload = await factory.getWithdrawPayload(senderAddress, withdrawParams);
+      const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
       expect(payload).toBeDefined();
     });
 
@@ -228,7 +231,7 @@ describe('Wrapper Testcases', () => {
           assetOut: TON_ASSET,
         },
       };
-      const payload = await factory.getWithdrawPayload(senderAddress, withdrawParams);
+      const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
       expect(payload).toBeDefined();
     });
 
@@ -249,7 +252,7 @@ describe('Wrapper Testcases', () => {
           },
         },
       };
-      const payload = await factory.getWithdrawPayload(senderAddress, withdrawParams);
+      const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
       expect(payload).toBeDefined();
     });
 
@@ -271,7 +274,7 @@ describe('Wrapper Testcases', () => {
           },
         },
       };
-      const payload = await factory.getWithdrawPayload(senderAddress, withdrawParams);
+      const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
       expect(payload).toBeDefined();
     });
   });
@@ -292,10 +295,10 @@ describe('Wrapper Testcases', () => {
     });
 
     it('should call getWalletAddress() successfully', async () => {
-      const walletAddress = await triTONPool.getWalletAddress(senderAddress);
+      const walletAddress = await triTONPool.getWalletAddress(SENDER_ADDRESS);
       expect(walletAddress).toBeDefined();
 
-      const walletAddress2 = await quaTONPool.getWalletAddress(senderAddress);
+      const walletAddress2 = await quaTONPool.getWalletAddress(SENDER_ADDRESS);
       expect(walletAddress2).toBeDefined();
     });
 
@@ -455,16 +458,23 @@ describe('Wrapper Testcases', () => {
   });
 
   describe('Vault get-methods testcases', () => {
-    it('should Jetton Vault call getJettonVaultData() successfully', async () => {
-      const jettonVault = client.open(Vault.createFromAddress(jettonVaultAddress));
-      const jettonVaultData = await jettonVault.getVaultData();
+    it('should Jetton/TON Vault call getVaultData() successfully', async () => {
+      const jettonVault = client.open(Vault.createFromAddress(H_TON_VAULT_ADDRESS));
+      const jettonVaultData = (await jettonVault.getVaultData()) as JettonVaultData;
       expect(jettonVaultData).toBeDefined();
-    });
+      expect(jettonVaultData.contractType).toBe(ContractType.vault);
+      expect(jettonVaultData.assetType).toBe(AssetType.JETTON);
+      expect(jettonVaultData.jettonMaster.equals(H_TON_MASTER)).toBeTruthy();
+      const jettonMaster = client.open(JettonMaster.create(H_TON_MASTER));
+      const jettonWallet = await jettonMaster.getWalletAddress(H_TON_VAULT_ADDRESS);
+      expect(jettonWallet.equals(jettonVaultData.jettonWallet)).toBeTruthy();
 
-    it('should Ton Vault call getTonVaultData() successfully', async () => {
-      const tonVault = client.open(Vault.createFromAddress(tonVaultAddress));
+      const tonVault = client.open(Vault.createFromAddress(TON_VAULT_ADDRESS));
       const tonVaultData = await tonVault.getVaultData();
       expect(tonVaultData).toBeDefined();
+      expect(tonVaultData.contractType).toBe(ContractType.vault);
+      expect(tonVaultData.assetType).toBe(AssetType.TON);
+      expect(jettonVaultData.admin.equals(tonVaultData.admin)).toBeTruthy();
     });
   });
 });
