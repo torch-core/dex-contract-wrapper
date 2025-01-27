@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.5
+
+### Patch Changes
+
+- 9fd1806: Fix the getVaultData() function to include parsing of the contract type.
+
 ## 0.2.4
 
 ### Patch Changes
