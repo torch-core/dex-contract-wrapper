@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.8
+
+### Patch Changes
+
+- 98713ae: If the LP account has no meta asset, it should return null.
+
 ## 0.2.7
 
 ### Patch Changes
