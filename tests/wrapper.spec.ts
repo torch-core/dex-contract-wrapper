@@ -8,38 +8,24 @@ import { DepositPayload, SwapPayload, WithdrawPayload } from '../src/factory/typ
 import { Allocation, Asset, AssetType } from '@torch-finance/core';
 import { ContractType } from '../src/common';
 import { JettonVaultData } from '../src/vault/storage';
+import { FactoryConfig, PoolAssets, PoolConfig } from './config';
 describe('Wrapper Testcases', () => {
   const endpoint = 'https://testnet-v4.tonhubapi.com';
   const client = new TonClient4({ endpoint });
-  const FACTORY_ADDRESS = Address.parse('EQBO9Xw9w0hJQx4kw3RSKu2LROZbtKg4icITKYp5enCQVGCu');
-  const TRI_TON_POOL_ADDRESS = Address.parse('EQCEao02tugbZjudFRMfyu2s_nVZli7F_rgxC1OjdvXpsBsw');
-  const QUA_TON_POOL_ADDRESS = Address.parse('EQA4rUktNrzOmgZ4OzsOX5Q-C1KelFPCtH8ln2YaHgyAO4kc');
-  const TON_ASSET = Asset.ton();
-  const TS_TON_ASSET = Asset.jetton('EQA5rOnkPx8xTWvSjKAqEkdLOIM0-IyT_u-5IEQ5R2y9m-36');
-  const ST_TON_ASSET = Asset.jetton('EQBbKadthJqQfnEsijYFvi25AKGDhS3CTVAf8oGZYwGk8G8W');
-  const TRI_TON_ASSET = Asset.jetton(TRI_TON_POOL_ADDRESS);
-  const USDT_ASSET = Asset.jetton(Address.parse('EQBflht80hwbivqv3Hnlhigqfe4RdY4Kb-LSOVldvGBsAgOQ'));
-  const USDC_ASSET = Asset.jetton(Address.parse('EQARxQlZfQUxhTcCRg4QraCtxmvw1GoGOeEanbcc55wLZg3E'));
-  const CRV_USD_ASSET = Asset.jetton(Address.parse('EQC76HKO16zcESvqLzDXpV98uRNiPDl_TO-g6794VMDGbbNZ'));
-
-  const TRI_USD_POOL_ADDRESS = Address.parse('EQCP0zt6jVBBQrfuVQv2mkGxTx644BY0givW2BskBkJ7oQoN');
-  const QUA_USD_POOL_ADDRESS = Address.parse('EQDNrykzaG7kEzmqa0H7nRRudU8EtzDSzYVQ8QEPslOgwDG8');
-
-  const H_TON_ASSET = Asset.jetton('EQDInlQkBcha9-KPGDR-eWi5VGhYPXO5s04amtzZ07s0Kzuu');
+  const H_TON_VAULT_ADDRESS = Address.parse('EQAR06-xqpVPH7u26mhpiqLVaSyF6dmidDxLYrOKfcsQeIkz');
   const H_TON_MASTER = Address.parse('EQDInlQkBcha9-KPGDR-eWi5VGhYPXO5s04amtzZ07s0Kzuu');
-  const H_TON_VAULT_ADDRESS = Address.parse('EQDruot_WmgJfqy3sz6VwjM5h48eioAblY_tL_j_ZuNcj6nU');
-  const TON_VAULT_ADDRESS = Address.parse('EQDB8wYs5U_alBNFPpR9UpI8wQNGhAEJmgrR8kOjSX50gOlH');
+  const TON_VAULT_ADDRESS = Address.parse('EQC8ntomwJFSx77PRd-TiaWkv5Bqyd3drjsB19zSfBoiegfr');
   const SENDER_ADDRESS = Address.parse('0QBtvbUwvUMHWiYt85cqAjtMSTOoDCufuBEhh7m6czZTn0wF');
 
   const triTONPoolRate: Allocation[] = Allocation.createAllocations([
-    { asset: TON_ASSET, value: 10n ** 27n },
-    { asset: TS_TON_ASSET, value: 10n ** 27n },
-    { asset: ST_TON_ASSET, value: 10n ** 27n },
+    { asset: PoolAssets.TON, value: 10n ** 27n },
+    { asset: PoolAssets.TS_TON, value: 10n ** 27n },
+    { asset: PoolAssets.ST_TON, value: 10n ** 27n },
   ]).sort((a, b) => a.asset.compare(b.asset));
 
   const quaTONPoolRate: Allocation[] = Allocation.createAllocations([
-    { asset: H_TON_ASSET, value: 10n ** 27n },
-    { asset: TRI_TON_ASSET, value: 10n ** 18n },
+    { asset: PoolAssets.H_TON, value: 10n ** 27n },
+    { asset: PoolAssets.TRI_TON, value: 10n ** 18n },
   ]).sort((a, b) => a.asset.compare(b.asset));
 
   let factory: OpenedContract<Factory>;
@@ -49,11 +35,11 @@ describe('Wrapper Testcases', () => {
   let quaUSDPOOL: OpenedContract<Pool>;
 
   beforeEach(async () => {
-    factory = client.open(Factory.createFromAddress(FACTORY_ADDRESS));
-    triTONPool = client.open(Pool.createFromAddress(TRI_TON_POOL_ADDRESS));
-    quaTONPool = client.open(Pool.createFromAddress(QUA_TON_POOL_ADDRESS));
-    triUSDPOOL = client.open(Pool.createFromAddress(TRI_USD_POOL_ADDRESS));
-    quaUSDPOOL = client.open(Pool.createFromAddress(QUA_USD_POOL_ADDRESS));
+    factory = client.open(Factory.createFromAddress(FactoryConfig.FACTORY_ADDRESS));
+    triTONPool = client.open(Pool.createFromAddress(PoolConfig.TRI_TON_POOL_ADDRESS));
+    quaTONPool = client.open(Pool.createFromAddress(PoolConfig.QUA_TON_POOL_ADDRESS));
+    triUSDPOOL = client.open(Pool.createFromAddress(PoolConfig.TRI_USD_POOL_ADDRESS));
+    quaUSDPOOL = client.open(Pool.createFromAddress(PoolConfig.QUA_USD_POOL_ADDRESS));
   });
 
   describe('Factory get-methods testcases', () => {
@@ -70,10 +56,10 @@ describe('Wrapper Testcases', () => {
     it('should getDepositPayload() successfully', async () => {
       const depositParams: DepositPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         poolAllocations: Allocation.createAllocations([
-          { asset: TON_ASSET, value: 1000000000000000000n },
-          { asset: TS_TON_ASSET, value: 1000000000000000000n },
+          { asset: PoolAssets.TON, value: 1000000000000000000n },
+          { asset: PoolAssets.TS_TON, value: 1000000000000000000n },
         ]),
       };
       const payload = await factory.getDepositPayload(SENDER_ADDRESS, depositParams);
@@ -83,15 +69,15 @@ describe('Wrapper Testcases', () => {
     it('should getDepositPayload() with deposit next successfully', async () => {
       const depositParams: DepositPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         poolAllocations: Allocation.createAllocations([
-          { asset: TON_ASSET, value: 1000000000000000000n },
-          { asset: TS_TON_ASSET, value: 1000000000000000000n },
+          { asset: PoolAssets.TON, value: 1000000000000000000n },
+          { asset: PoolAssets.TS_TON, value: 1000000000000000000n },
         ]),
         next: {
           type: 'Deposit',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
-          metaAllocation: new Allocation({ asset: TON_ASSET, value: 1000000000000000000n }),
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
+          metaAllocation: new Allocation({ asset: PoolAssets.TON, value: 1000000000000000000n }),
         },
       };
       const payload = await factory.getDepositPayload(SENDER_ADDRESS, depositParams);
@@ -101,15 +87,15 @@ describe('Wrapper Testcases', () => {
     it('should getDepositPayload() with swap next successfully', async () => {
       const depositParams: DepositPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         poolAllocations: Allocation.createAllocations([
-          { asset: TON_ASSET, value: 1000000000000000000n },
-          { asset: TS_TON_ASSET, value: 1000000000000000000n },
+          { asset: PoolAssets.TON, value: 1000000000000000000n },
+          { asset: PoolAssets.TS_TON, value: 1000000000000000000n },
         ]),
         next: {
           type: 'Swap',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
-          assetOut: TS_TON_ASSET,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
+          assetOut: PoolAssets.TS_TON,
         },
       };
       const payload = await factory.getDepositPayload(SENDER_ADDRESS, depositParams);
@@ -119,9 +105,9 @@ describe('Wrapper Testcases', () => {
     it('should call getSwapPayload() successfully', async () => {
       const swapParams: SwapPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
-        assetIn: TON_ASSET,
-        assetOut: TS_TON_ASSET,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
+        assetIn: PoolAssets.TON,
+        assetOut: PoolAssets.TS_TON,
         amountIn: 1000000000000000000n,
       };
       const payload = await factory.getSwapPayload(SENDER_ADDRESS, swapParams);
@@ -131,16 +117,16 @@ describe('Wrapper Testcases', () => {
     it('should call getSwapPayload() with withdraw single mode next successfully', async () => {
       const swapParams: SwapPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
-        assetIn: TON_ASSET,
-        assetOut: TS_TON_ASSET,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
+        assetIn: PoolAssets.TON,
+        assetOut: PoolAssets.TS_TON,
         amountIn: 1000000000000000000n,
         next: {
           type: 'Withdraw',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
           config: {
             mode: 'Single',
-            assetOut: TON_ASSET,
+            assetOut: PoolAssets.TON,
           },
         },
       };
@@ -151,13 +137,13 @@ describe('Wrapper Testcases', () => {
     it('should call getSwapPayload() with withdraw balanced mode next successfully', async () => {
       const swapParams: SwapPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
-        assetIn: TON_ASSET,
-        assetOut: TS_TON_ASSET,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
+        assetIn: PoolAssets.TON,
+        assetOut: PoolAssets.TS_TON,
         amountIn: 1000000000000000000n,
         next: {
           type: 'Withdraw',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
           config: {
             mode: 'Balanced',
           },
@@ -170,7 +156,7 @@ describe('Wrapper Testcases', () => {
     it('should call getWithdrawPayload() with balanced mode successfully', async () => {
       const withdrawParams: WithdrawPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         burnLpAmount: 1000000000000000000n,
         config: {
           mode: 'Balanced',
@@ -183,14 +169,14 @@ describe('Wrapper Testcases', () => {
     it('should call getWithdrawPayload() with balanced mode and next balanced mode successfully', async () => {
       const withdrawParams: WithdrawPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         burnLpAmount: 1000000000000000000n,
         config: {
           mode: 'Balanced',
         },
         next: {
           type: 'Withdraw',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
           config: {
             mode: 'Balanced',
           },
@@ -203,17 +189,17 @@ describe('Wrapper Testcases', () => {
     it('should call getWithdrawPayload() with balanced mode and next single mode successfully', async () => {
       const withdrawParams: WithdrawPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         burnLpAmount: 1000000000000000000n,
         config: {
           mode: 'Balanced',
         },
         next: {
           type: 'Withdraw',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
           config: {
             mode: 'Single',
-            assetOut: TON_ASSET,
+            assetOut: PoolAssets.TON,
           },
         },
       };
@@ -224,11 +210,11 @@ describe('Wrapper Testcases', () => {
     it('should call getWithdrawPayload() with single mode successfully', async () => {
       const withdrawParams: WithdrawPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         burnLpAmount: 1000000000000000000n,
         config: {
           mode: 'Single',
-          assetOut: TON_ASSET,
+          assetOut: PoolAssets.TON,
         },
       };
       const payload = await factory.getWithdrawPayload(SENDER_ADDRESS, withdrawParams);
@@ -238,15 +224,15 @@ describe('Wrapper Testcases', () => {
     it('should call getWithdrawPayload() with single mode and next balanced mode successfully', async () => {
       const withdrawParams: WithdrawPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         burnLpAmount: 1000000000000000000n,
         config: {
           mode: 'Single',
-          assetOut: TON_ASSET,
+          assetOut: PoolAssets.TON,
         },
         next: {
           type: 'Withdraw',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
           config: {
             mode: 'Balanced',
           },
@@ -259,18 +245,18 @@ describe('Wrapper Testcases', () => {
     it('should call getWithdrawPayload() with single mode and next single mode successfully', async () => {
       const withdrawParams: WithdrawPayload = {
         queryId: 1n,
-        poolAddress: TRI_TON_POOL_ADDRESS,
+        poolAddress: PoolConfig.TRI_TON_POOL_ADDRESS,
         burnLpAmount: 1000000000000000000n,
         config: {
           mode: 'Single',
-          assetOut: TON_ASSET,
+          assetOut: PoolAssets.TON,
         },
         next: {
           type: 'Withdraw',
-          nextPoolAddress: QUA_TON_POOL_ADDRESS,
+          nextPoolAddress: PoolConfig.QUA_TON_POOL_ADDRESS,
           config: {
             mode: 'Single',
-            assetOut: TON_ASSET,
+            assetOut: PoolAssets.TON,
           },
         },
       };
@@ -314,7 +300,7 @@ describe('Wrapper Testcases', () => {
       const virtualPrice = await triUSDPOOL.getVirtualPrice();
 
       const SCRV_USD_ASSET = Asset.jetton(Address.parse('EQBN8qMhmCS2yj9a7KqRJTGPv8AZmfsBnRrw3ClODwpyus8v'));
-      const TRI_USD_LP_ASSET = Asset.jetton(TRI_USD_POOL_ADDRESS);
+      const TRI_USD_LP_ASSET = Asset.jetton(PoolConfig.TRI_USD_POOL_ADDRESS);
 
       const quaUSDPOOLRate = Allocation.createAllocations([
         { asset: SCRV_USD_ASSET, value: 10n ** 18n },
@@ -329,9 +315,9 @@ describe('Wrapper Testcases', () => {
     it('should call simulateDeposit() with rates successfully', async () => {
       const simulateDepositResult = await triTONPool.getSimulateDeposit({
         depositAmounts: Allocation.createAllocations([
-          { asset: TON_ASSET, value: 1000000000000000000n },
-          { asset: TS_TON_ASSET, value: 1000000000000000000n },
-          { asset: ST_TON_ASSET, value: 1000000000000000000n },
+          { asset: PoolAssets.TON, value: 1000000000000000000n },
+          { asset: PoolAssets.TS_TON, value: 1000000000000000000n },
+          { asset: PoolAssets.ST_TON, value: 1000000000000000000n },
         ]),
         rates: triTONPoolRate,
       });
@@ -345,9 +331,9 @@ describe('Wrapper Testcases', () => {
     it('should call simulateDeposit() without rates successfully', async () => {
       const simulateDepositResult = await triUSDPOOL.getSimulateDeposit({
         depositAmounts: Allocation.createAllocations([
-          { asset: USDT_ASSET, value: 100000n },
-          { asset: USDC_ASSET, value: 100000n },
-          { asset: CRV_USD_ASSET, value: 10n ** 17n },
+          { asset: PoolAssets.USDT, value: 100000n },
+          { asset: PoolAssets.USDC, value: 100000n },
+          { asset: PoolAssets.CRV_USD, value: 10n ** 17n },
         ]),
       });
       expect(simulateDepositResult).toBeDefined();
@@ -360,9 +346,9 @@ describe('Wrapper Testcases', () => {
     it('should call simulateSwap() with rates and ExactIn successfully', async () => {
       const simulateSwapResult = await triTONPool.getSimulateSwap({
         mode: 'ExactIn',
-        assetIn: TON_ASSET,
-        assetOut: TS_TON_ASSET,
-        amountIn: 1000000000000000000n,
+        assetIn: PoolAssets.TON,
+        assetOut: PoolAssets.TS_TON,
+        amountIn: toNano(0.5),
         rates: triTONPoolRate,
       });
       if (simulateSwapResult.mode !== 'ExactIn') {
@@ -378,8 +364,8 @@ describe('Wrapper Testcases', () => {
     it('should call simulateSwap() without rates but with ExactIn successfully', async () => {
       const simulateSwapResult = await triUSDPOOL.getSimulateSwap({
         mode: 'ExactIn',
-        assetIn: USDT_ASSET,
-        assetOut: USDC_ASSET,
+        assetIn: PoolAssets.USDT,
+        assetOut: PoolAssets.USDC,
         amountIn: 100000n,
       });
       if (simulateSwapResult.mode !== 'ExactIn') {
@@ -394,8 +380,8 @@ describe('Wrapper Testcases', () => {
     it('should call simulateSwap() with rates and ExactOut successfully', async () => {
       const simulateSwapResult = await triTONPool.getSimulateSwap({
         mode: 'ExactOut',
-        assetIn: TON_ASSET,
-        assetOut: TS_TON_ASSET,
+        assetIn: PoolAssets.TON,
+        assetOut: PoolAssets.TS_TON,
         amountOut: toNano(1),
         rates: triTONPoolRate,
       });
@@ -411,8 +397,8 @@ describe('Wrapper Testcases', () => {
     it('should call simulateSwap() without rates but with ExactOut successfully', async () => {
       const simulateSwapResult = await triUSDPOOL.getSimulateSwap({
         mode: 'ExactOut',
-        assetIn: USDT_ASSET,
-        assetOut: USDC_ASSET,
+        assetIn: PoolAssets.USDT,
+        assetOut: PoolAssets.USDC,
         amountOut: 1000n,
       });
       if (simulateSwapResult.mode != 'ExactOut') {
