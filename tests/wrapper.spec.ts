@@ -435,8 +435,15 @@ describe('Wrapper Testcases', () => {
   });
 
   describe('Lp Account get-methods testcases', () => {
-    it('should call getLpAccountData() successfully', async () => {
-      const lpAccountAddress = Address.parse('0QCD8mAs2cPvcRiXVAhj6bm8nsEiwlqKqfv8mejxLNYZHfvq');
+    it('should call getLpAccountData() with metaAsset successfully', async () => {
+      const lpAccountAddress = Address.parse('0QBuvm93yb4HshNJINyfcO6sYFVDjDbXoys8PJOMTtb8u7Xz');
+      const lpAccount = client.open(LpAccount.createFromAddress(lpAccountAddress));
+      const lpAccountData = await lpAccount.getLpAccountData();
+      expect(lpAccountData).toBeDefined();
+    });
+
+    it('should call getLpAccountData() without metaAsset successfully', async () => {
+      const lpAccountAddress = Address.parse('0QDoOiiY7R5tHgo47qVYJzVwKR-LDqef8__TKrLdfwSB46HL');
       const lpAccount = client.open(LpAccount.createFromAddress(lpAccountAddress));
       const lpAccountData = await lpAccount.getLpAccountData();
       expect(lpAccountData).toBeDefined();

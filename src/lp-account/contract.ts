@@ -25,7 +25,8 @@ export class LpAccount implements Contract {
     const queryId = res.stack.readBigNumber();
     const providerAddress = res.stack.readAddress();
     const poolAddress = res.stack.readAddress();
-    const metaAsset = Asset.fromCell(res.stack.readCell());
+    const metaAssetCell = res.stack.readCellOpt();
+    const metaAsset = metaAssetCell ? Asset.fromCell(metaAssetCell) : null;
     const metaAmount = res.stack.readBigNumber();
     const metaBalance = res.stack.readBigNumber();
     const assets = parseAssetsFromNestedCell(res.stack.readCell());
