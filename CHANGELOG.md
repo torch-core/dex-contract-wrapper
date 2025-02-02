@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.7
+
+### Patch Changes
+
+- 7dc3288: Add the ContractProvider parameter to the getCancelDepositPayload method and include corresponding tests.
+
 ## 0.2.6
 
 ### Patch Changes
