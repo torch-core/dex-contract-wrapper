@@ -1,12 +1,21 @@
-import { Address, Contract, ContractProvider } from '@ton/core';
+import { Address, beginCell, Contract, ContractProvider, toNano } from '@ton/core';
 import { Allocation, Asset, parseAssetsFromNestedCell, parseCoinsFromNestedCell } from '@torch-finance/core';
 import { LpAccountData } from './storage';
+import { Op, Size } from '../common';
 
 export class LpAccount implements Contract {
   constructor(readonly address: Address) {}
 
   static createFromAddress(address: Address) {
     return new LpAccount(address);
+  }
+
+  async getCancelDepositPayload(queryId: bigint = 8n, depositedAssetCount: number) {
+    return {
+      to: this.address,
+      value: toNano('0.15') * BigInt(depositedAssetCount),
+      body: beginCell().storeUint(Op.LpAccount.CancelDeposit, Size.Op).storeUint(queryId, Size.QueryId).endCell(),
+    };
   }
 
   async getLpAccountData(provider: ContractProvider): Promise<LpAccountData> {
