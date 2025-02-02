@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.6
+
+### Patch Changes
+
+- 4df0717: Add the getCancelDepositPayload method in the LP Account, allowing users to cancel the assets they have already deposited in the LP account.
+
 ## 0.2.5
 
 ### Patch Changes
