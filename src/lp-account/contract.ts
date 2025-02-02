@@ -10,7 +10,7 @@ export class LpAccount implements Contract {
     return new LpAccount(address);
   }
 
-  async getCancelDepositPayload(queryId: bigint = 8n, depositedAssetCount: number) {
+  async getCancelDepositPayload(provider: ContractProvider, depositedAssetCount: number, queryId: bigint = 8n) {
     return {
       to: this.address,
       value: toNano('0.15') * BigInt(depositedAssetCount),
