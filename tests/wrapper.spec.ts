@@ -443,6 +443,16 @@ describe('Wrapper Testcases', () => {
     });
   });
 
+  describe('Lp Account testcases', () => {
+    it('should call getCancelDepositPayload() successfully', async () => {
+      const lpAccount = client.open(
+        LpAccount.createFromAddress(Address.parse('0QBuvm93yb4HshNJINyfcO6sYFVDjDbXoys8PJOMTtb8u7Xz')),
+      );
+      const payload = await lpAccount.getCancelDepositPayload(3);
+      expect(payload).toBeDefined();
+    });
+  });
+
   describe('Vault get-methods testcases', () => {
     it('should Jetton/TON Vault call getVaultData() successfully', async () => {
       const jettonVault = client.open(Vault.createFromAddress(H_TON_VAULT_ADDRESS));
