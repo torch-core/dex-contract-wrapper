@@ -31,10 +31,11 @@ export abstract class ExitCode {
   static InvalidFee = 2009;
   static InvalidAChange = 2010;
   static IncorrectDepositTarget = 2012;
+  static WrongBasePool = 2013;
 
   static WrongBaseAsset = 3000;
   static WrongMetaAsset = 3001;
-  static WrongBasePool = 3002;
+  static WrongNext = 3002;
 
   static WrongMetaAmount = 4000;
   static DuplicateDeposit = 4001;
@@ -112,6 +113,8 @@ export abstract class ExitCode {
         return 'Wrong base pool';
       case ExitCode.WrongMetaAmount:
         return 'Wrong meta amount';
+      case ExitCode.WrongNext:
+        return 'Wrong next';
       case ExitCode.WrongOp:
         return 'Undefined opcode';
       case ExitCode.DuplicateDeposit:
