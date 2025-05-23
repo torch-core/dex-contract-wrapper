@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.10
+
+### Patch Changes
+
+- d002188: Active extra payload in swap operation
+
 ## 0.2.9
 
 ### Patch Changes
