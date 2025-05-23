@@ -108,7 +108,7 @@ type SwapConfig = {
   rejectPayload?: Cell | null;
 
   /**
-   * Currently unsupported extra payload.
+   * Extra payload for the swap operation. used for referral program
    */
   extraPayload?: Dictionary<bigint, Cell> | null;
 };
@@ -292,6 +292,11 @@ export type SwapNext = {
    * Transactions yielding less than this amount will fail.
    */
   minAmountOut?: bigint | null;
+
+  /**
+   * Extra payload for the swap operation. used for referral program
+   */
+  extraPayload?: Dictionary<bigint, Cell> | null;
 
   /**
    * The next operation in the sequence, allowing for nested transaction flows.
