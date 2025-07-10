@@ -1,5 +1,5 @@
 import { Cell, toNano } from '@ton/core';
-import { computeMessageForwardFees, MsgPrices } from '@ton/ton';
+import { computeFwdFees, MsgPrices } from '@ton/ton';
 
 export abstract class NumTxs {
   // It takes 7 txs to complete a swap
@@ -32,15 +32,32 @@ export class GasCalculator {
     this.config = { ...this.config, ...newConfig };
   }
 
-  static computeTotalSendingFees(msgBody: Cell): bigint {
-    const { fees, remaining } = computeMessageForwardFees(this.config, msgBody);
-    const actionFee = fees - remaining;
-    return actionFee + fees;
+  static collectCellStats(cell: Cell, skipRoot: boolean = false): { bits: number; cells: number } {
+    let bits = skipRoot ? 0 : cell.bits.length;
+    let cells = skipRoot ? 0 : 1;
+    for (let ref of cell.refs) {
+      let r = this.collectCellStats(ref);
+      cells += r.cells;
+      bits += r.bits;
+    }
+    return { bits, cells };
   }
 
   static computeForwardFees(numTxs: bigint, fulfillPayload?: Cell | null, rejectPayload?: Cell | null): bigint {
-    const fullfillPayloadFee = fulfillPayload ? this.computeTotalSendingFees(fulfillPayload) : 0n;
-    const rejectPayloadFee = rejectPayload ? this.computeTotalSendingFees(rejectPayload) : 0n;
+    const fullfillPayloadFee = fulfillPayload
+      ? computeFwdFees(
+          this.config,
+          BigInt(this.collectCellStats(fulfillPayload).cells),
+          BigInt(this.collectCellStats(fulfillPayload).bits),
+        )
+      : 0n;
+    const rejectPayloadFee = rejectPayload
+      ? computeFwdFees(
+          this.config,
+          BigInt(this.collectCellStats(rejectPayload).cells),
+          BigInt(this.collectCellStats(rejectPayload).bits),
+        )
+      : 0n;
     return (fullfillPayloadFee > rejectPayloadFee ? fullfillPayloadFee : rejectPayloadFee) * numTxs;
   }
 }
