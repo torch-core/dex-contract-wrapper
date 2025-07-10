@@ -1,5 +1,11 @@
 # @torch-finance/dex-contract-wrapper
 
+## 0.2.11
+
+### Patch Changes
+
+- 3f4b977: Update the forward fee calculation method.
+
 ## 0.2.10
 
 ### Patch Changes
