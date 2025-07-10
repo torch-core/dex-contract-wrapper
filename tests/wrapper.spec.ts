@@ -1,4 +1,4 @@
-import { Address, OpenedContract, toNano } from '@ton/core';
+import { Address, beginCell, OpenedContract, toNano } from '@ton/core';
 import { JettonMaster, TonClient4 } from '@ton/ton';
 import { Pool } from '../src/pool/contract';
 import { Factory } from '../src/factory/contract';
@@ -109,6 +109,11 @@ describe('Wrapper Testcases', () => {
         assetIn: PoolAssets.TON,
         assetOut: PoolAssets.TS_TON,
         amountIn: 1000000000000000000n,
+        config: {
+          recipient: SENDER_ADDRESS,
+          fulfillPayload: beginCell().storeUint(1, 32).endCell(),
+          rejectPayload: beginCell().storeUint(1, 256).endCell(),
+        },
       };
       const payload = await factory.getSwapPayload(SENDER_ADDRESS, swapParams);
       expect(payload).toBeDefined();
